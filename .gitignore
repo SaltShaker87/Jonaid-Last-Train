@@ -1,0 +1,4 @@
+.godot/
+*.tmp
+*.log
+capture/shot_*.png

@@ -1,0 +1,15 @@
+{
+  "manifest_version": 2,
+  "note": "Godot MCP places from this manifest. Blender exports glTF with SOCKET_* empties. Art pass: palette-matched, beveled hero props + heads/busts.",
+  "palette": ["espresso #241C17", "antique gold #D9A940", "ivory #E8DEc4", "oxblood #73141A", "subway gray #8C8E94"],
+  "placements": [
+    {"model": "res://assets/models/copier.glb", "room": "office", "socket": "copier"},
+    {"model": "res://assets/models/lightbox.glb", "room": "street", "socket": "lightbox"},
+    {"model": "res://assets/models/sedan.glb", "room": "street", "socket": "sedan"},
+    {"model": "res://assets/models/tank.glb", "room": "apartment", "socket": "tank"},
+    {"model": "res://assets/models/couch.glb", "room": "apartment", "socket": "couch"},
+    {"model": "res://assets/models/cabinet.glb", "room": "apartment", "socket": "cabinet"},
+    {"model": "res://assets/models/heads.glb", "room": "office", "socket": "heads_ref", "note": "5 expression sculpts, reference only — runtime uses procedural brows+tint"},
+    {"model": "res://assets/models/busts.glb", "room": "office", "socket": "busts_ref", "note": "4 boss busts reference — runtime NPCs match silhouettes"}
+  ]
+}

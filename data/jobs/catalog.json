@@ -1,0 +1,142 @@
+{
+  "jobs": [
+    {
+      "id": "pin_folder",
+      "client": "Hansung 14F",
+      "weight": "errand",
+      "scene": "office",
+      "skill": "none",
+      "prompt": "Pin the folder",
+      "hard_clock": "",
+      "comply": {"face": -2, "pip": -5},
+      "defect": {"pip": 10, "snipe": true},
+      "days": [1, 2, 3, 4, 5],
+      "weekdays": [0, 1, 2, 3, 4]
+    },
+    {
+      "id": "take_tube",
+      "client": "Bujang Park",
+      "weight": "errand",
+      "scene": "office",
+      "skill": "none",
+      "prompt": "Haul the DO NOT COPY tube",
+      "hard_clock": "",
+      "comply": {"carry": "map_tube"},
+      "defect": {"face": -4},
+      "days": [1],
+      "weekdays": [1]
+    },
+    {
+      "id": "lightbox_trace",
+      "client": "Clerk Yoon",
+      "weight": "heavy",
+      "scene": "street",
+      "skill": "trace",
+      "prompt": "Trace the site boundary off the lightbox",
+      "hard_clock": "",
+      "comply": {"face": 4, "stress": 8},
+      "defect": {"face": -2, "stress": 14},
+      "days": [1],
+      "weekdays": [1]
+    },
+    {
+      "id": "yoon_crop",
+      "client": "Clerk Yoon",
+      "weight": "manual",
+      "scene": "street",
+      "skill": "pour",
+      "prompt": "Crop on her copier",
+      "hard_clock": "",
+      "comply": {},
+      "defect": {}
+    },
+    {
+      "id": "mullae_copy",
+      "client": "Mullae copier",
+      "weight": "manual",
+      "scene": "street",
+      "skill": "pour",
+      "prompt": "Worse mask, no Yoon, legal flag if too clean",
+      "hard_clock": "",
+      "comply": {"legal_flag": true},
+      "defect": {}
+    },
+    {
+      "id": "bow_choi",
+      "client": "Director Choi",
+      "weight": "manual",
+      "scene": "office",
+      "skill": "bow",
+      "prompt": "Hold the bow",
+      "hard_clock": "",
+      "comply": {"face": 6},
+      "defect": {"face": -6}
+    },
+    {
+      "id": "g90_board",
+      "client": "Director Choi",
+      "weight": "heavy",
+      "scene": "street",
+      "skill": "digits_g90",
+      "prompt": "Three black luxury cars on 180,000 won",
+      "hard_clock": "20:00",
+      "comply": {"face": 10},
+      "defect": {"face": -8, "money": -600000}
+    },
+    {
+      "id": "slides_pc",
+      "client": "Hansung PIP",
+      "weight": "heavy",
+      "scene": "office",
+      "skill": "slides",
+      "prompt": "Assemble the vendor pack, catch Sora's number",
+      "hard_clock": "18:00 Fri",
+      "comply": {"pip": -15},
+      "defect": {"pip": 35}
+    },
+    {
+      "id": "platform_dash",
+      "client": "Last train",
+      "weight": "heavy",
+      "scene": "station",
+      "skill": "dash",
+      "prompt": "Dash the platform before the doors shut",
+      "hard_clock": "23:18",
+      "comply": {},
+      "defect": {"taxi": 42000}
+    },
+    {
+      "id": "fish_prime",
+      "client": "Hana / Chairman Bubbles",
+      "weight": "manual",
+      "scene": "apartment",
+      "skill": "pour_prime",
+      "prompt": "Seat the filter, hold the prime bulb",
+      "hard_clock": "midnight",
+      "comply": {"hana": 4},
+      "defect": {"fish": false}
+    },
+    {
+      "id": "beer_pour",
+      "client": "Bar",
+      "weight": "manual",
+      "scene": "street",
+      "skill": "pour_beer",
+      "prompt": "Manual pour, stress down, smell sticks",
+      "hard_clock": "",
+      "comply": {"stress": -25, "hana": -4},
+      "defect": {}
+    },
+    {
+      "id": "kakao",
+      "client": "Everyone",
+      "weight": "manual",
+      "scene": "any",
+      "skill": "kakao",
+      "prompt": "Three-reply window while the clock runs",
+      "hard_clock": "",
+      "comply": {},
+      "defect": {}
+    }
+  ]
+}
