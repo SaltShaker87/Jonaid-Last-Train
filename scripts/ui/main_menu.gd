@@ -3,6 +3,7 @@ class_name MainMenu
 ## Title + briefing. English UI with Korean texture (GDD §21 locked call).
 
 signal new_game_pressed
+signal continue_pressed
 
 var _root: Control
 var menu_open := true
@@ -33,15 +34,22 @@ func _ready() -> void:
 	sub.size = Vector2(1100, 260)
 	sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_root.add_child(sub)
+	var cont := Button.new()
+	cont.text = "Continue — last morning"
+	cont.position = Vector2(80, 585)
+	cont.size = Vector2(420, 46)
+	cont.visible = SaveIO.has_save()
+	cont.pressed.connect(func(): continue_pressed.emit())
+	_root.add_child(cont)
 	var btn := Button.new()
 	btn.text = "Start Tuesday 08:50 — badge in"
-	btn.position = Vector2(80, 560)
+	btn.position = Vector2(80, 645)
 	btn.size = Vector2(420, 56)
 	btn.pressed.connect(func(): new_game_pressed.emit())
 	_root.add_child(btn)
 	var note := Label.new()
 	note.text = "No Samsung marks, no real executives, no real car badges. The roast is the pitch. The build is original."
-	note.position = Vector2(80, 630)
+	note.position = Vector2(80, 715)
 	note.size = Vector2(1100, 40)
 	_root.add_child(note)
 

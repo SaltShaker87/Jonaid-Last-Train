@@ -48,7 +48,7 @@ func show_ending(kind: String, ending_id: String) -> void:
 		"sold_filter": "DAY 60 — we sold the filter",
 		"chairman_bubbles": "Chairman Bubbles",
 		"clerk_yoon_right": "Clerk Yoon was right",
-		"quit_draft": "Unsent draft: you quit. Unemployed, married, fish alive.",
+		"quit_draft": "DAY 60 — Unsent draft: you quit. Unemployed, married, fish alive.",
 	}
 	var bodies := {
 		"fired": "PIP hit 100 because the slides were empty or Sora's number survived. Park can threaten you over the map. The system will not fire you for it — but it fired you for this.",
@@ -58,8 +58,8 @@ func show_ending(kind: String, ending_id: String) -> void:
 		"corner_cubicle": "Face high, couch permanent. You won the floor and lost the living room.",
 		"sold_filter": "Money fine, kids low. The tank hums. Nobody watches it.",
 		"chairman_bubbles": "Tank empty. No jump scare. The ending stays quiet.",
-		"clerk_yoon_right": "Every illegal trace refused. Yoon stamps nothing. You kept your hands clean.",
-		"quit_draft": "Secret exit: a KakaoTalk draft that says you quit, after a nuclear near-miss.",
+		"clerk_yoon_right": "The tube was never copied, never traced. Yoon stamps nothing, you keep your hands clean, the key still works on day 60.",
+		"quit_draft": "A resignation draft on your PC since week 2, never sent. Hana stayed. The fish stayed. The job can keep the rest.",
 	}
 	_title.text = titles.get(ending_id, kind.to_upper())
 	_body.text = bodies.get(ending_id, "The day clock stopped for you.")

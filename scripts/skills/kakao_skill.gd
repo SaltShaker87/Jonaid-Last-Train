@@ -7,6 +7,7 @@ var thread: Array = []  # outgoing drafts
 var needed: int = 3
 var typed: String = ""
 var has_typo: bool = false
+var _had_typo := false
 var _info: Label
 var _view: Label
 var _edit: LineEdit
@@ -75,6 +76,7 @@ func _on_submit(text: String) -> void:
 		return
 	if has_typo:
 		has_typo = false
+		_had_typo = true
 		thread.append(text + " (fixed)")
 	else:
 		thread.append(text)
@@ -82,4 +84,4 @@ func _on_submit(text: String) -> void:
 		_edit.text = ""
 	_refresh()
 	if thread.size() >= needed:
-		complete("clean")
+		complete("sloppy" if _had_typo else "clean")

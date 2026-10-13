@@ -1,0 +1,11 @@
+{
+  "day": 6,
+  "weekday": 0,
+  "from_day": 6,
+  "briefing": "Monday. Sunday ran like water — the clock skipped it. Park started the week without you if Body was wrecked.",
+  "jobs": ["pin_folder", "bow_choi", "copier_jam", "slides_pc", "shuttle_curb", "platform_dash", "sleep_bed"],
+  "script": [
+    "Week 2 loops the same knives: pin the pile, mind the shuttle, mind the record.",
+    "Yoon's trace comes back on a Tuesday (day 7+) — and the tank wants its prime."
+  ]
+}

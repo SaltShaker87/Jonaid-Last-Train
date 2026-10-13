@@ -1,17 +1,87 @@
 {
   "jobs": [
     {
+      "id": "badge_out",
+      "client": "Hansung 14F",
+      "weight": "errand",
+      "scene": "office",
+      "skill": "none",
+      "prompt": "Badge out — elevator to street",
+      "on_use": [
+        {"do": "travel", "room": "street", "minutes": 4}
+      ]
+    },
+    {
+      "id": "go_office",
+      "client": "Hansung 14F",
+      "weight": "errand",
+      "scene": "street",
+      "skill": "none",
+      "prompt": "Back to the office (elevator)",
+      "on_use": [
+        {"do": "travel", "room": "office", "minutes": 4}
+      ]
+    },
+    {
+      "id": "go_station",
+      "client": "Last train",
+      "weight": "errand",
+      "scene": "any",
+      "skill": "none",
+      "prompt": "Down to the station (turnstile)",
+      "on_use": [
+        {"do": "travel", "room": "station", "minutes": 6}
+      ]
+    },
+    {
+      "id": "go_street",
+      "client": "Last train",
+      "weight": "errand",
+      "scene": "any",
+      "skill": "none",
+      "prompt": "Back to street (missed? taxi only after doors shut)",
+      "on_use": [
+        {"do": "travel", "room": "street", "minutes": 3}
+      ]
+    },
+    {
+      "id": "go_office_morning",
+      "client": "Hansung 14F",
+      "weight": "errand",
+      "scene": "apartment",
+      "skill": "none",
+      "prompt": "Badge in — back to the office (next morning)",
+      "on_use": [
+        {"do": "engine", "name": "go_office_morning"}
+      ]
+    },
+    {
       "id": "pin_folder",
       "client": "Hansung 14F",
       "weight": "errand",
       "scene": "office",
       "skill": "none",
-      "prompt": "Pin the folder",
-      "hard_clock": "",
-      "comply": {"face": -2, "pip": -5},
-      "defect": {"pip": 10, "snipe": true},
-      "days": [1, 2, 3, 4, 5],
-      "weekdays": [0, 1, 2, 3, 4]
+      "prompt": "Pin the folder (petty, visible, effective)",
+      "weekdays": [0, 1, 2, 3, 4],
+      "once": "day",
+      "on_use": [
+        {"do": "flag", "name": "pinned_folder", "value": true},
+        {"do": "meter", "name": "face", "delta": -2},
+        {"do": "toast", "text": "Stamped. Park sees it. Face dips. PIP is safe."}
+      ]
+    },
+    {
+      "id": "briefing",
+      "client": "Bujang Park",
+      "weight": "errand",
+      "scene": "office",
+      "skill": "none",
+      "prompt": "Stand for briefing (or read later, colder)",
+      "once": "day",
+      "on_use": [
+        {"do": "toast", "text": "Park: the map must move today. Sora: numbers at 18:00. Hana (text): shuttle moved up?"},
+        {"do": "meter", "name": "stress", "delta": 4}
+      ]
     },
     {
       "id": "take_tube",
@@ -20,46 +90,83 @@
       "scene": "office",
       "skill": "none",
       "prompt": "Haul the DO NOT COPY tube",
-      "hard_clock": "",
-      "comply": {"carry": "map_tube"},
-      "defect": {"face": -4},
       "days": [1],
-      "weekdays": [1]
+      "day_min": 7,
+      "weekdays": [1],
+      "once": "day",
+      "on_use": [
+        {"do": "carry", "value": "map_tube"},
+        {"do": "flag", "name": "has_map_tube", "value": true},
+        {"do": "toast", "text": "Tube under your arm. Carry slows you and blocks the bow."}
+      ]
     },
     {
-      "id": "lightbox_trace",
-      "client": "Clerk Yoon",
+      "id": "copier_jam",
+      "client": "Floor copier",
+      "weight": "manual",
+      "scene": "office",
+      "skill": "pour",
+      "prompt": "Clear the copier jam",
+      "weekdays": [0, 1, 2, 3, 4],
+      "on_finish": [
+        {"do": "audio", "name": "jam"}
+      ],
+      "on_grade": {
+        "clean": [
+          {"do": "meter", "name": "face", "delta": 3},
+          {"do": "meter", "name": "stress", "delta": -4}
+        ],
+        "sloppy": [
+          {"do": "meter", "name": "face", "delta": 3},
+          {"do": "meter", "name": "stress", "delta": -4}
+        ],
+        "fail": [
+          {"do": "meter", "name": "stress", "delta": 8}
+        ]
+      }
+    },
+    {
+      "id": "slides_pc",
+      "client": "Hansung PIP",
       "weight": "heavy",
-      "scene": "street",
-      "skill": "trace",
-      "prompt": "Trace the site boundary off the lightbox",
-      "hard_clock": "",
-      "comply": {"face": 4, "stress": 8},
-      "defect": {"face": -2, "stress": 14},
-      "days": [1],
-      "weekdays": [1]
+      "scene": "office",
+      "skill": "slides",
+      "prompt": "Build the vendor slides (first person)",
+      "hard_clock": "18:00 Fri",
+      "weekdays": [0, 1, 2, 3, 4],
+      "on_use": [
+        {"do": "engine", "name": "sora_snipe"}
+      ],
+      "on_grade": {
+        "clean": [
+          {"do": "flag", "name": "slides_filed", "value": true},
+          {"do": "meter", "name": "pip", "delta": -15},
+          {"do": "meter", "name": "face", "delta": 6}
+        ],
+        "sloppy": [
+          {"do": "flag", "name": "slides_filed", "value": true},
+          {"do": "meter", "name": "pip", "delta": 15},
+          {"do": "toast", "text": "Sora's number survived. PIP reads the file at 18:00, not your face."}
+        ],
+        "fail": [
+          {"do": "meter", "name": "pip", "delta": 35}
+        ]
+      }
     },
     {
-      "id": "yoon_crop",
-      "client": "Clerk Yoon",
-      "weight": "manual",
-      "scene": "street",
-      "skill": "pour",
-      "prompt": "Crop on her copier",
-      "hard_clock": "",
-      "comply": {},
-      "defect": {}
-    },
-    {
-      "id": "mullae_copy",
-      "client": "Mullae copier",
-      "weight": "manual",
-      "scene": "street",
-      "skill": "pour",
-      "prompt": "Worse mask, no Yoon, legal flag if too clean",
-      "hard_clock": "",
-      "comply": {"legal_flag": true},
-      "defect": {}
+      "id": "quit_draft_pc",
+      "client": "You",
+      "weight": "errand",
+      "scene": "office",
+      "skill": "none",
+      "prompt": "Open the resignation draft (unsent)",
+      "day_min": 2,
+      "once": "game",
+      "on_use": [
+        {"do": "flag", "name": "quit_draft", "value": true},
+        {"do": "meter", "name": "stress", "delta": -15},
+        {"do": "toast", "text": "A draft: resignation, unsent. You close the laptop before Park walks by."}
+      ]
     },
     {
       "id": "bow_choi",
@@ -68,9 +175,110 @@
       "scene": "office",
       "skill": "bow",
       "prompt": "Hold the bow",
-      "hard_clock": "",
-      "comply": {"face": 6},
-      "defect": {"face": -6}
+      "weekdays": [0, 1, 2, 3, 4],
+      "on_grade": {
+        "clean": [
+          {"do": "meter", "name": "face", "delta": 6},
+          {"do": "meter", "name": "stress", "delta": 4}
+        ],
+        "sloppy": [
+          {"do": "meter", "name": "face", "delta": 1},
+          {"do": "meter", "name": "stress", "delta": 8}
+        ],
+        "fail": [
+          {"do": "meter", "name": "face", "delta": -6},
+          {"do": "meter", "name": "stress", "delta": 12}
+        ]
+      }
+    },
+    {
+      "id": "yoon_refuse",
+      "client": "Clerk Yoon",
+      "weight": "errand",
+      "scene": "street",
+      "skill": "none",
+      "prompt": "Hand Yoon the tube (she refuses the stamp)",
+      "weekdays": [0, 1, 2, 3, 4],
+      "once": "day",
+      "on_use": [
+        {"do": "toast", "text": "Yoon: I will not print a page with the stamp. Three outs: crop, trace, or Mullae."},
+        {"do": "meter", "name": "stress", "delta": 5}
+      ]
+    },
+    {
+      "id": "yoon_crop",
+      "client": "Clerk Yoon",
+      "weight": "manual",
+      "scene": "street",
+      "skill": "pour",
+      "prompt": "Crop on her copier — mask the prohibition",
+      "weekdays": [0, 1, 2, 3, 4],
+      "on_grade": {
+        "clean": [
+          {"do": "flag", "name": "map_resolved", "value": true},
+          {"do": "toast", "text": "Mask aligned. Prohibition falls outside the glass."}
+        ],
+        "sloppy": [
+          {"do": "flag", "name": "map_resolved", "value": true},
+          {"do": "meter", "name": "stress", "delta": 10}
+        ],
+        "fail": [
+          {"do": "meter", "name": "stress", "delta": 14}
+        ]
+      }
+    },
+    {
+      "id": "mullae_copy",
+      "client": "Mullae copier",
+      "weight": "manual",
+      "scene": "street",
+      "skill": "pour",
+      "prompt": "Mullae copier — worse mask, no Yoon",
+      "weekdays": [0, 1, 2, 3, 4],
+      "on_use": [
+        {"do": "minutes", "value": 12}
+      ],
+      "on_grade": {
+        "clean": [
+          {"do": "flag", "name": "map_resolved", "value": true},
+          {"do": "flag", "name": "legal_flag", "value": true},
+          {"do": "toast", "text": "Mullae copy too clean — legal flag raised. Yoon was right."}
+        ],
+        "sloppy": [
+          {"do": "flag", "name": "map_resolved", "value": true}
+        ]
+      }
+    },
+    {
+      "id": "lightbox_trace",
+      "client": "Clerk Yoon",
+      "weight": "heavy",
+      "scene": "street",
+      "skill": "trace",
+      "prompt": "Trace on the lightbox (follow the boundary)",
+      "hard_clock": "20:00",
+      "days": [1],
+      "day_min": 7,
+      "weekdays": [1],
+      "once": "day",
+      "on_grade": {
+        "clean": [
+          {"do": "flag", "name": "map_resolved", "value": true},
+          {"do": "meter", "name": "face", "delta": 4},
+          {"do": "meter", "name": "stress", "delta": 8},
+          {"do": "carry", "value": ""},
+          {"do": "toast", "text": "Clean trace. Yoon nods. Park will remember you solved it."}
+        ],
+        "sloppy": [
+          {"do": "flag", "name": "map_resolved", "value": true},
+          {"do": "meter", "name": "face", "delta": -2},
+          {"do": "meter", "name": "stress", "delta": 14}
+        ],
+        "fail": [
+          {"do": "meter", "name": "stress", "delta": 18},
+          {"do": "toast", "text": "Failed attempt. 30 minutes billed and the prop is still unsolved."}
+        ]
+      }
     },
     {
       "id": "g90_board",
@@ -78,21 +286,111 @@
       "weight": "heavy",
       "scene": "street",
       "skill": "digits_g90",
-      "prompt": "Three black luxury cars on 180,000 won",
+      "prompt": "Close three luxury cars on ₩180,000",
       "hard_clock": "20:00",
-      "comply": {"face": 10},
-      "defect": {"face": -8, "money": -600000}
+      "weekdays": [0, 1, 2, 3, 4],
+      "on_grade": {
+        "clean": [
+          {"do": "meter", "name": "face", "delta": 10},
+          {"do": "toast", "text": "Convoy story lands. Three black sedans, stapler budget intact."}
+        ],
+        "sloppy": [
+          {"do": "meter", "name": "face", "delta": 2},
+          {"do": "toast", "text": "Washed dark sedan. Survive his walkaround."}
+        ],
+        "fail": [
+          {"do": "meter", "name": "face", "delta": -8},
+          {"do": "toast", "text": "Numbers cannot close. The deposit form glows. Sign it and the hole gets deeper."}
+        ]
+      }
     },
     {
-      "id": "slides_pc",
-      "client": "Hansung PIP",
-      "weight": "heavy",
-      "scene": "office",
-      "skill": "slides",
-      "prompt": "Assemble the vendor pack, catch Sora's number",
-      "hard_clock": "18:00 Fri",
-      "comply": {"pip": -15},
-      "defect": {"pip": 35}
+      "id": "g90_sign",
+      "client": "Director Choi",
+      "weight": "manual",
+      "scene": "street",
+      "skill": "digits_sign",
+      "prompt": "Sign the deposit on your card (₩600,000 hole)",
+      "weekdays": [0, 1, 2, 3, 4],
+      "on_grade": {
+        "clean": [
+          {"do": "money", "delta": -600000},
+          {"do": "meter", "name": "face", "delta": 4},
+          {"do": "toast", "text": "Signed. A ₩600,000 hole opens on your card."}
+        ],
+        "else": [
+          {"do": "money", "delta": -600000},
+          {"do": "meter", "name": "stress", "delta": 10}
+        ]
+      }
+    },
+    {
+      "id": "whiskey_buy",
+      "client": "Convenience store",
+      "weight": "errand",
+      "scene": "street",
+      "skill": "none",
+      "prompt": "Buy whiskey (file as office supplies)",
+      "on_use": [
+        {"do": "carry", "value": "whiskey"},
+        {"do": "toast", "text": "Whiskey secured. File the receipt as office supplies."}
+      ]
+    },
+    {
+      "id": "beer_pour",
+      "client": "Bar",
+      "weight": "manual",
+      "scene": "street",
+      "skill": "pour_beer",
+      "prompt": "Pour a beer (stress down, smell sticks)",
+      "on_grade": {
+        "else": [
+          {"do": "money", "spend": 14000},
+          {"do": "meter", "name": "stress", "delta": -25},
+          {"do": "flag", "name": "smell_beer", "value": true},
+          {"do": "meter", "name": "hana", "delta": -4},
+          {"do": "meter", "name": "body", "delta": -4},
+          {"do": "meter", "name": "jealousy", "delta": 4},
+          {"do": "toast", "text": "Beer down. Stress falls. Smell sticks to the suit and Hana has a nose."}
+        ]
+      }
+    },
+    {
+      "id": "shuttle_curb",
+      "client": "Jun's van",
+      "weight": "errand",
+      "scene": "street",
+      "skill": "none",
+      "prompt": "Catch Jun's shuttle (miss the curb, driver leaves)",
+      "weekdays": [0, 1, 2, 3, 4],
+      "on_use": [
+        {"do": "engine", "name": "resolve_shuttle"}
+      ]
+    },
+    {
+      "id": "go_restaurant",
+      "client": "Hoesik table",
+      "weight": "errand",
+      "scene": "street",
+      "skill": "none",
+      "prompt": "Join the table — wrong direction from the station",
+      "weekdays": [3],
+      "on_use": [
+        {"do": "engine", "name": "resolve_restaurant"}
+      ]
+    },
+    {
+      "id": "turnstile",
+      "client": "Station",
+      "weight": "errand",
+      "scene": "station",
+      "skill": "none",
+      "prompt": "Tap through the turnstile",
+      "on_use": [
+        {"do": "audio", "name": "turnstile"},
+        {"do": "toast", "text": "Turnstile. Crowd lanes shove. Platform edge ahead."},
+        {"do": "minutes", "value": 2}
+      ]
     },
     {
       "id": "platform_dash",
@@ -102,8 +400,62 @@
       "skill": "dash",
       "prompt": "Dash the platform before the doors shut",
       "hard_clock": "23:18",
-      "comply": {},
-      "defect": {"taxi": 42000}
+      "on_grade": {
+        "clean": [{"do": "engine", "name": "resolve_dash", "args": ["$grade"]}],
+        "sloppy": [{"do": "engine", "name": "resolve_dash", "args": ["$grade"]}],
+        "fail": [{"do": "engine", "name": "resolve_dash", "args": ["$grade"]}]
+      }
+    },
+    {
+      "id": "hoesik_pour",
+      "client": "Team",
+      "weight": "manual",
+      "scene": "restaurant",
+      "skill": "pour_beer",
+      "prompt": "Pour (refuse once, attendance costs the family train)",
+      "on_grade": {
+        "clean": [{"do": "engine", "name": "resolve_hoesik", "args": ["$grade"]}],
+        "sloppy": [{"do": "engine", "name": "resolve_hoesik", "args": ["$grade"]}],
+        "else": [{"do": "engine", "name": "resolve_hoesik", "args": ["$grade"]}]
+      }
+    },
+    {
+      "id": "leave_hoesik",
+      "client": "Team",
+      "weight": "errand",
+      "scene": "restaurant",
+      "skill": "none",
+      "prompt": "Leave the table (too late for the family train)",
+      "on_use": [
+        {"do": "toast", "text": "You left the table early. Face costs a little. The 19:40 is now a geography problem."},
+        {"do": "meter", "name": "face", "delta": -2},
+        {"do": "travel", "room": "street", "minutes": 6}
+      ]
+    },
+    {
+      "id": "talk_hana",
+      "client": "Hana",
+      "weight": "errand",
+      "scene": "apartment",
+      "skill": "none",
+      "prompt": "Talk to Hana (she names the slip, the shuttle, the time)",
+      "on_use": [
+        {"do": "meter", "name": "hana", "delta": 4},
+        {"do": "meter", "name": "stress", "delta": -6},
+        {"do": "toast", "text": "Hana names the slip, the shuttle, and the time. The filter hums."}
+      ]
+    },
+    {
+      "id": "bedtime",
+      "client": "Harin / Jun",
+      "weight": "errand",
+      "scene": "apartment",
+      "skill": "none",
+      "prompt": "Bedtime (two interactions if early)",
+      "once": "day",
+      "on_use": [
+        {"do": "engine", "name": "bedtime"}
+      ]
     },
     {
       "id": "fish_prime",
@@ -111,21 +463,96 @@
       "weight": "manual",
       "scene": "apartment",
       "skill": "pour_prime",
-      "prompt": "Seat the filter, hold the prime bulb",
+      "prompt": "Seat the filter + hold the prime bulb",
       "hard_clock": "midnight",
-      "comply": {"hana": 4},
-      "defect": {"fish": false}
+      "on_grade": {
+        "clean": [
+          {"do": "flag", "name": "filter_state", "value": "ok"},
+          {"do": "flag", "name": "fish_alive", "value": true},
+          {"do": "meter", "name": "stress", "delta": -8},
+          {"do": "meter", "name": "hana", "delta": 4}
+        ],
+        "else": [{"do": "engine", "name": "resolve_prime", "args": ["$grade"]}]
+      }
     },
     {
-      "id": "beer_pour",
-      "client": "Bar",
-      "weight": "manual",
-      "scene": "street",
-      "skill": "pour_beer",
-      "prompt": "Manual pour, stress down, smell sticks",
-      "hard_clock": "",
-      "comply": {"stress": -25, "hana": -4},
-      "defect": {}
+      "id": "sleep_bed",
+      "client": "Bed",
+      "weight": "errand",
+      "scene": "apartment",
+      "skill": "none",
+      "prompt": "Sleep in bed (good/polite cabinet by Hana)",
+      "on_use": [
+        {"do": "engine", "name": "sleep_bed"}
+      ]
+    },
+    {
+      "id": "sleep_couch",
+      "client": "Couch",
+      "weight": "errand",
+      "scene": "apartment",
+      "skill": "none",
+      "prompt": "Sleep on couch (sad shelf, Jun hears filter 02:00)",
+      "on_use": [
+        {"do": "engine", "name": "sleep_couch"}
+      ]
+    },
+    {
+      "id": "cabinet_shop",
+      "client": "Good cabinet / sad shelf",
+      "weight": "errand",
+      "scene": "apartment",
+      "skill": "none",
+      "prompt": "Shop the shelf (couch sleep locks the good cabinet)",
+      "on_use": [
+        {"do": "engine", "name": "resolve_shop"}
+      ]
+    },
+    {
+      "id": "sign_slip",
+      "client": "Harin",
+      "weight": "errand",
+      "scene": "apartment",
+      "skill": "none",
+      "prompt": "Sign Harin's slip",
+      "once": "game",
+      "on_use": [
+        {"do": "promise", "name": "slip_signed", "value": true},
+        {"do": "meter", "name": "hana", "delta": 8},
+        {"do": "meter", "name": "kids", "delta": 6},
+        {"do": "toast", "text": "Slip signed. A promise with a mesh, not a flag."}
+      ]
+    },
+    {
+      "id": "gym_walk",
+      "client": "Saturday body",
+      "weight": "errand",
+      "scene": "apartment",
+      "skill": "none",
+      "prompt": "Walk to the gym (Saturday is the only body you get)",
+      "weekdays": [5],
+      "on_use": [
+        {"do": "minutes", "value": 40},
+        {"do": "meter", "name": "body", "delta": 14},
+        {"do": "meter", "name": "stress", "delta": -12},
+        {"do": "toast", "text": "Forty minutes on a machine nobody watches. Body up, stress down."}
+      ]
+    },
+    {
+      "id": "market_fish",
+      "client": "Saturday market",
+      "weight": "errand",
+      "scene": "apartment",
+      "skill": "none",
+      "prompt": "Buy a new fish at the market (tank is empty)",
+      "weekdays": [5],
+      "requires": {"not_fish_alive": true},
+      "on_use": [
+        {"do": "money", "spend": 15000},
+        {"do": "flag", "name": "fish_alive", "value": true},
+        {"do": "meter", "name": "kids", "delta": 5},
+        {"do": "toast", "text": "A new tank. The kids name him before you do."}
+      ]
     },
     {
       "id": "kakao",
@@ -133,10 +560,17 @@
       "weight": "manual",
       "scene": "any",
       "skill": "kakao",
-      "prompt": "Three-reply window while the clock runs",
-      "hard_clock": "",
-      "comply": {},
-      "defect": {}
+      "prompt": "Phone: KakaoTalk — three-reply window while the clock runs",
+      "on_grade": {
+        "clean": [
+          {"do": "meter", "name": "stress", "delta": 3},
+          {"do": "toast", "text": "Replies sent. The building clock ran while the phone was open."}
+        ],
+        "sloppy": [
+          {"do": "meter", "name": "stress", "delta": 6},
+          {"do": "toast", "text": "A typo went out. Hana will ask about it. The clock ran anyway."}
+        ]
+      }
     }
   ]
 }

@@ -1,7 +1,7 @@
 {
   "day": 1,
   "weekday": 1,
-  "briefing": "08:50. Tube on the desk, vendor folder unpinned, Harin's slip in your bag from last night.",
+  "briefing": "08:50 Tuesday. Tube on the desk, vendor folder unpinned, Harin's slip in your bag from last night.",
   "jobs": ["pin_folder", "take_tube", "yoon_refuse", "lightbox_trace", "shuttle_curb", "platform_dash", "sign_slip", "sleep_bed"],
   "script": [
     "Stamp the folder. Park sees it. Face dips. PIP is safe.",

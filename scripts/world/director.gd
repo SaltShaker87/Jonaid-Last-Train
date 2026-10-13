@@ -53,16 +53,13 @@ func _process(delta: float) -> void:
 		if not bool(s[3]) and t >= float(s[0]):
 			s[3] = true
 			call(String(s[2]))
-			if game != null and game.has_method("hud"):
-				pass
 	if t >= 40.0:
 		_done = true
 		_save_shot()
 		_write_storyboard()
-		if game != null and game.has_method("hud"):
-			var h = game.get("hud")
-			if h != null and h.has_method("show_toast"):
-				(h as HUD).show_toast("Capture done — see capture/shot_*.png + storyboard.md")
+		var h = game.get("hud") if game != null else null
+		if h != null and h.has_method("show_toast"):
+			(h as HUD).show_toast("Capture done — see capture/shot_*.png + storyboard.generated.md")
 		print("[Director] capture done.")
 
 func _save_shot() -> void:
@@ -88,12 +85,14 @@ func _save_shot() -> void:
 	_shot_i += 1
 
 func _write_storyboard() -> void:
-	var lines: Array = ["# 40s capture — a day going wrong in the right order", ""]
+	# Generated beats go to their own file. capture/storyboard.md is the
+	# hand-written palette/audio checklist — the director never clobbers it.
+	var lines: Array = ["# 40s capture (generated) — a day going wrong in the right order", ""]
 	for s in _steps:
 		lines.append("- %4.1fs %s — %s" % [float(s[0]), s[1], "shot_%02d.png" % int(float(s[0]) / 2.0)])
 	lines.append("")
 	lines.append("Beats: tube→Yoon refuse→sloppy trace (45min)→shuttle curb→crowd→stumble→slip→prime→couch buzz→snipe→PIP.")
-	var path := "res://capture/storyboard.md"
+	var path := "res://capture/storyboard.generated.md"
 	var f := FileAccess.open(path, FileAccess.WRITE)
 	if f != null:
 		f.store_string("\n".join(lines))

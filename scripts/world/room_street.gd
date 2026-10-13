@@ -23,6 +23,11 @@ func _ready() -> void:
 	lightbox.activated.connect(_relay)
 	# Rental desk (G90)
 	RoomBuilder.box_prop(self, Vector3(0, 1.1, -3.5), Vector3(4.0, 2.2, 0.4), Color(0.20, 0.20, 0.22), "RENTAL DESK")
+	var sedan_socket := Node3D.new()
+	sedan_socket.name = "sedan"
+	sedan_socket.position = Vector3(2.4, 0, -3.2)
+	add_child(sedan_socket)
+	register_socket("sedan", sedan_socket)
 	var g90 := RoomBuilder.interactable(self, Vector3(0, 1.0, -2.2), Interactable.Weight.HEAVY, "Close three luxury cars on ₩180,000", "g90_board", "digits_g90")
 	g90.activated.connect(_relay)
 	var sign := RoomBuilder.interactable(self, Vector3(1.6, 1.0, -2.2), Interactable.Weight.MANUAL, "Sign the deposit on your card (₩600,000 hole)", "g90_sign", "digits_sign")
@@ -46,6 +51,9 @@ func _ready() -> void:
 	register_socket("curb", curb)
 	var shuttle := RoomBuilder.interactable(self, Vector3(18, 1.0, 1.6), Interactable.Weight.ERRAND, "Catch Jun's shuttle (miss the curb, driver leaves)", "shuttle_curb", "")
 	shuttle.activated.connect(_relay)
+	# Thursday hoesik table (wrong direction from the station).
+	var hoesik_door := RoomBuilder.interactable(self, Vector3(8, 1.0, -1.0), Interactable.Weight.ERRAND, "Join the table — wrong direction from the station", "go_restaurant", "")
+	hoesik_door.activated.connect(_relay)
 	# Station entry / office entry doors (masked loads)
 	var to_station := RoomBuilder.interactable(self, Vector3(19.5, 1.0, -1.5), Interactable.Weight.ERRAND, "Down to the station (turnstile)", "go_station", "")
 	to_station.activated.connect(_relay)

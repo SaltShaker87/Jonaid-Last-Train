@@ -2,6 +2,10 @@ extends Node
 ## Main — day loop in space (GDD §9), losses/endings (§13), UI glue (§15).
 ## Third person in world, first person only for lightbox + slides.
 ## World clock runs while walking/typing. Skills freeze + bill on exit.
+##
+## Content is data: data/jobs/catalog.json + data/jobs/days/*.json.
+## This file owns only (a) the engine loop, (b) verbs that are genuinely
+## procedural (shuttle/dash/hoesik/shop/sleep/resolutions), (c) save.
 
 var world_root: Node3D
 var player: Salaryman
@@ -11,6 +15,7 @@ var menu: MainMenu
 var ending: EndingScreen
 var fade: ColorRect
 var skill_layer: CanvasLayer
+var pause_layer: CanvasLayer
 
 var trace_skill: TraceSkill
 var bow_skill: HoldSkill
@@ -29,7 +34,8 @@ var active_skill: SkillBase = null
 var active_inter: Interactable = null
 var audio_players: Dictionary = {}
 var hoesik_refused_once := false
-var recital_missed := false
+
+var _paused := false
 
 const ROOM_SCRIPTS := {
 	"office": "res://scripts/world/room_office.gd",
@@ -45,9 +51,11 @@ func _ready() -> void:
 	DayClock.hard_event.connect(_on_hard)
 	GameState.game_over.connect(_on_game_over)
 	menu.new_game_pressed.connect(start_new_game)
+	menu.continue_pressed.connect(continue_game)
 	# Headless smoke path: allow --auto-test to boot without menu.
 	if "--auto-test" in OS.get_cmdline_args() or OS.has_feature("dedicated_server"):
 		start_new_game()
+		TestRig.attach(self)
 	# 40s capture: -- --capture (needs rendering; headless prints dry-run).
 	if "--capture" in OS.get_cmdline_user_args() or "--capture" in OS.get_cmdline_args():
 		start_new_game()
@@ -110,6 +118,8 @@ func _build_chrome() -> void:
 	cl.layer = 40
 	cl.add_child(fade)
 	add_child(cl)
+	pause_layer = PauseMenu.create(self)
+	add_child(pause_layer)
 	_setup_audio()
 
 func _setup_audio() -> void:
@@ -125,12 +135,11 @@ func _setup_audio() -> void:
 		p.volume_db = float(levels.get(n, -6.0))
 		add_child(p)
 		audio_players[n] = p
-	# Office bed: cool hum loop bed. Apartment bed: warm loop bed.
+	# Beds: dedicated looping wavs so the one-shot SFX stay one-shot.
 	for bed in ["bed_office", "bed_home"]:
 		var b := AudioStreamPlayer.new()
 		b.name = "Bed_" + bed
-		# Reuse buzz/chime softly as bed placeholders until composed beds land.
-		var bp := "res://assets/audio/buzz.wav" if bed == "bed_home" else "res://assets/audio/chime.wav"
+		var bp := "res://assets/audio/%s.wav" % bed
 		if ResourceLoader.exists(bp):
 			b.stream = load(bp) as AudioStream
 		b.volume_db = -28.0
@@ -159,16 +168,58 @@ func _crossfade_beds(to_home: bool) -> void:
 
 func start_new_game() -> void:
 	GameState.new_game()
+	SaveIO.clear()
 	DayClock.start_day(1, 1, 8 * 60 + 50)
 	hoesik_refused_once = false
-	recital_missed = false
 	menu.hide_menu()
+	_paused = false
+	get_tree().paused = false
+	pause_layer.visible = false
 	player.move_enabled = true
 	player.set_carry("")
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if not OS.has_feature("web") else Input.MOUSE_MODE_VISIBLE
 	load_room("office")
-	hud.show_toast("08:50. Tube on the desk, folder unpinned, Harin's slip in your bag. Stamp the folder.")
-	GameState.toast.emit("Briefing is a place. Stand in the zone or read it later on the phone, colder.")
+	hud.show_toast("08:50 Tuesday. Tube on the desk. Folder unpinned. Harin's slip in your bag.")
+	_day_briefing()
+
+func continue_game() -> void:
+	var d := SaveIO.load()
+	if d.is_empty():
+		start_new_game()
+		return
+	GameState.import_state(d.get("state", {}) as Dictionary)
+	menu.hide_menu()
+	_paused = false
+	get_tree().paused = false
+	pause_layer.visible = false
+	player.move_enabled = true
+	player.set_carry(GameState.carry_item)
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if not OS.has_feature("web") else Input.MOUSE_MODE_VISIBLE
+	DayClock.start_day(int(d.get("day", 1)), int(d.get("weekday", 1)), float(d.get("minutes", 8 * 60 + 50)))
+	load_room("office")
+	_day_briefing()
+	hud.show_toast("Continued — Day %d %s." % [DayClock.day, DayClock.weekday_name()])
+
+func _day_briefing() -> void:
+	var dd := JobBoard.day_def(DayClock.day, DayClock.weekday)
+	var line := String(dd.get("briefing", ""))
+	if line != "":
+		hud.show_toast(line)
+		GameState.day_script = dd.get("script", [])
+
+func toggle_pause() -> void:
+	if menu.menu_open or ending.visible:
+		return
+	_paused = not _paused
+	get_tree().paused = _paused
+	pause_layer.visible = _paused
+	player.move_enabled = not _paused
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if _paused else Input.MOUSE_MODE_CAPTURED
+
+func quit_to_title() -> void:
+	get_tree().paused = false
+	_paused = false
+	get_tree().reload_current_scene()
 
 func load_room(room_id: String, socket_name: String = "spawn") -> void:
 	if not ROOM_SCRIPTS.has(room_id):
@@ -185,6 +236,8 @@ func load_room(room_id: String, socket_name: String = "spawn") -> void:
 	# Room _ready builds content; wait a frame for sockets.
 	await get_tree().process_frame
 	current_room.set_player_spawn(player, socket_name)
+	# Day-gating: interactables whose job is off today are hidden + disabled.
+	JobBoard.apply_gating(current_room, DayClock.day, DayClock.weekday)
 	_apply_room_art(room_id)
 	_fade_to(0.0)
 	hud.refresh_board()
@@ -208,106 +261,42 @@ func _fade_to(a: float) -> void:
 func _on_target_changed(inter: Interactable) -> void:
 	hud.set_prompt(inter)
 
+func show_ending(kind: String, ending_id: String) -> void:
+	player.move_enabled = false
+	ending.show_ending(kind, ending_id)
+
 # ---------------------------------------------------------------- interactions
+## Everything below is data-driven: the job's JSON decides which list of
+## effects fires. Engine verbs (resolve_*) stay here because they are the
+## part that is genuinely procedural.
 
 func on_interact(inter: Interactable) -> void:
-	if active_skill != null:
+	if active_skill != null or GameState.ended:
 		return
-	var job: String = inter.job_id
-	match job:
-		"badge_out":
-			DayClock.add_minutes(4)
-			load_room("street")
-		"go_office":
-			DayClock.add_minutes(4)
-			load_room("office")
-		"go_station":
-			DayClock.add_minutes(6)
-			load_room("station")
-		"go_street":
-			DayClock.add_minutes(3)
-			load_room("street")
-		"go_office_morning":
-			advance_morning("away" if DayClock.minutes > 24 * 60 else "bed_polite")
-		"pin_folder":
-			GameState.pinned_folder = true
-			GameState.add_face(-2.0)
-			GameState.toast.emit("Stamped. Park sees it. Face dips. PIP is safe.")
+	if not JobBoard.job_is_live(inter.job_id, DayClock.day, DayClock.weekday, current_room_id):
+		return
+	var job: Dictionary = JobBoard.job(inter.job_id)
+	var ctx := {"game": self, "inter": inter, "grade": ""}
+	# on_use fires immediately (minutes for the long walk, toasts, flags).
+	Effects.apply_list(job.get("on_use", []), ctx)
+	var skill_key := String(job.get("skill", ""))
+	if skill_key != "" and skill_key != "none":
+		open_skill(skill_key, inter)
+	else:
+		_mark_used(inter, job)
+
+func _mark_used(inter: Interactable, job: Dictionary) -> void:
+	if inter == null:
+		return
+	match String(job.get("once", "")):
+		"day":
+			GameState.used_jobs_day[inter.job_id] = true
 			inter.disabled = true
-		"briefing":
-			GameState.toast.emit("Park: the map must move today. Sora: numbers at 18:00. Hana (text): shuttle moved up?")
-			StressSys.add(4.0)
-		"take_tube":
-			player.set_carry("map_tube")
-			GameState.has_map_tube = true
-			GameState.toast.emit("Tube under your arm. Carry slows you and blocks the bow.")
+			inter.visible = false
+		"game":
+			GameState.used_jobs_run[inter.job_id] = true
 			inter.disabled = true
-		"copier_jam":
-			open_skill("pour", inter)
-		"yoon_refuse":
-			GameState.toast.emit("Yoon: I will not print a page with the stamp. Three outs: crop, trace, or Mullae.")
-			StressSys.add(5.0)
-		"yoon_crop":
-			open_skill("pour", inter)
-		"mullae_copy":
-			DayClock.add_minutes(12)
-			open_skill("pour", inter)
-		"lightbox_trace":
-			open_skill("trace", inter)
-		"bow_choi":
-			open_skill("bow", inter)
-		"g90_board":
-			open_skill("digits_g90", inter)
-		"g90_sign":
-			open_skill("digits_sign", inter)
-		"whiskey_buy":
-			player.set_carry("whiskey")
-			GameState.toast.emit("Whiskey secured. File the receipt as office supplies.")
-		"beer_pour":
-			open_skill("pour_beer", inter)
-		"shuttle_curb":
-			_resolve_shuttle()
-		"turnstile":
-			play_audio("turnstile")
-			GameState.toast.emit("Turnstile. Crowd lanes shove. Platform edge ahead.")
-			DayClock.add_minutes(2)
-		"platform_dash":
-			open_skill("dash", inter)
-		"talk_hana":
-			GameState.add_hana(4.0)
-			StressSys.relieve(6.0)
-			GameState.toast.emit("Hana names the slip, the shuttle, and the time. The filter hums.")
-		"bedtime":
-			if int(DayClock.minutes) % (24 * 60) > 21 * 60 + 30:
-				GameState.toast.emit("Kids' door is shut. Hana in the kitchen doing accounting.")
-			else:
-				GameState.add_kids(8.0)
-				GameState.add_hana(5.0)
-				StressSys.relieve(10.0)
-				GameState.toast.emit("Bedtime finished. Two interactions fit because you arrived early.")
-				inter.disabled = true
-		"fish_prime":
-			open_skill("pour_prime", inter)
-		"sleep_bed":
-			var cab := GameState.cabinet_state()
-			advance_morning("bed_good" if cab == "good" else "bed_polite")
-		"sleep_couch":
-			advance_morning("couch")
-		"cabinet_shop":
-			_resolve_shop()
-		"sign_slip":
-			GameState.promises["slip_signed"] = true
-			GameState.add_hana(8.0)
-			GameState.add_kids(6.0)
-			GameState.toast.emit("Slip signed. A promise with a mesh, not a flag.")
-			inter.disabled = true
-		"slides_pc":
-			_maybe_sora_snipe()
-			open_skill("slides", inter)
-		"hoesik_pour":
-			open_skill("pour_beer", inter)
-		_:
-			GameState.toast.emit("Nothing happens. The clock keeps running.")
+			inter.visible = false
 
 func open_skill(skill_key: String, inter: Interactable) -> void:
 	var sk := _skill_for_key(skill_key)
@@ -364,151 +353,36 @@ func _on_skill_finished(grade: String) -> void:
 		DayClock.frozen = false
 		var billed := DayClock.bill_skill(grade)
 		GameState.toast.emit("Skill %s. Billed %d game-minutes (now %s)." % [grade, billed, DayClock.clock_string()])
-	_apply_job_result(inter, sk, grade)
+	var job: Dictionary = {}
+	if inter != null:
+		job = JobBoard.job(inter.job_id)
+	elif sk == kakao_skill:
+		job = JobBoard.job("kakao")  # phone path: clock runs, graded from data
+	var ctx := {"game": self, "inter": inter, "grade": grade}
+	if job.is_empty():
+		# No authored job (unknown inter): still costs a little calm.
+		StressSys.add(3.0)
+		GameState.toast.emit("Replies sent. The building clock ran while the phone was open.")
+	else:
+		if job.has("on_grade"):
+			var og: Dictionary = job["on_grade"]
+			Effects.apply_list(og[grade] if og.has(grade) else og.get("else", []), ctx)
+		if job.has("on_finish"):
+			Effects.apply_list(job["on_finish"], ctx)
+		_mark_used(inter, job)
 	hud.refresh_board()
 
-func _apply_job_result(inter: Interactable, sk: SkillBase, grade: String) -> void:
-	var job := "" if inter == null else String(inter.job_id)
-	var key := ""
-	if sk == trace_skill:
-		key = "trace"
-	elif sk == bow_skill:
-		key = "bow"
-	elif sk == crop_skill:
-		key = "crop"
-	elif sk == prime_skill:
-		key = "prime"
-	elif sk == pour_beer_skill:
-		key = "pour_beer"
-	elif sk == digits_g90:
-		key = "g90"
-	elif sk == digits_sign:
-		key = "sign"
-	elif sk == slides_skill:
-		key = "slides"
-	elif sk == kakao_skill:
-		key = "kakao"
-	elif sk == dash_skill:
-		key = "dash"
-	match key:
-		"trace":
-			if grade == "clean":
-				GameState.map_resolved = true
-				GameState.add_face(4.0)
-				StressSys.add(8.0)
-				player.set_carry("")
-				GameState.toast.emit("Clean trace. Yoon nods. Park will remember you solved it.")
-			elif grade == "sloppy":
-				GameState.map_resolved = true
-				GameState.add_face(-2.0)
-				StressSys.add(14.0)
-				GameState.toast.emit("Sloppy line — cropped edge. Yoon may reject it. You redo or you hand it back uncopied.")
-			else:
-				StressSys.add(18.0)
-				GameState.toast.emit("Failed attempt. 30 minutes billed and the prop is still unsolved.")
-		"crop":
-			play_audio("jam")
-			if job == "copier_jam":
-				if grade != "fail":
-					GameState.add_face(3.0)
-					StressSys.relieve(4.0)
-				else:
-					StressSys.add(8.0)
-			elif job == "yoon_crop":
-				if grade == "clean":
-					GameState.map_resolved = true
-					GameState.toast.emit("Mask aligned. Prohibition falls outside the glass.")
-				elif grade == "sloppy":
-					GameState.map_resolved = true
-					StressSys.add(10.0)
-				else:
-					StressSys.add(14.0)
-			elif job == "mullae_copy":
-				if grade == "clean":
-					GameState.map_resolved = true
-					GameState.map_legal_flag = true
-					GameState.toast.emit("Mullae copy too clean — legal flag raised. Yoon was right.")
-				elif grade == "sloppy":
-					GameState.map_resolved = true
-		"bow":
-			if grade == "clean":
-				GameState.add_face(6.0)
-				StressSys.add(4.0)
-			elif grade == "sloppy":
-				GameState.add_face(1.0)
-				StressSys.add(8.0)
-			else:
-				GameState.add_face(-6.0)
-				StressSys.add(12.0)
-		"g90":
-			if grade == "clean":
-				GameState.add_face(10.0)
-				GameState.toast.emit("Convoy story lands. Three black sedans, stapler budget intact.")
-			elif grade == "sloppy":
-				GameState.add_face(2.0)
-				GameState.toast.emit("Washed dark sedan. Survive his walkaround.")
-			else:
-				GameState.add_face(-8.0)
-				GameState.toast.emit("Numbers cannot close. The deposit form glows. Sign it and the hole gets deeper.")
-		"sign":
-			if grade == "clean":
-				GameState.money -= 600000
-				GameState.add_face(4.0)
-				GameState.toast.emit("Signed. A ₩600,000 hole opens on your card.")
-			else:
-				GameState.money -= 600000
-				StressSys.add(10.0)
-		"prime":
-			if grade == "clean":
-				GameState.filter_state = "ok" if GameState.has_quiet_filter else "ok"
-				GameState.fish_alive = true
-				StressSys.relieve(8.0)
-				GameState.add_hana(4.0)
-			elif grade == "sloppy":
-				GameState.fish_alive = DayClock.minutes < 24 * 60
-				StressSys.add(6.0)
-			else:
-				if DayClock.minutes >= 24 * 60:
-					GameState.fish_alive = false
-					GameState.toast.emit("Missed the prime after midnight. Saturday is an empty tank.")
-				StressSys.add(12.0)
-		"pour_beer":
-			if job == "hoesik_pour":
-				_resolve_hoesik(grade)
-			else:
-				if not GameState.spend(GameState.BEER):
-					return
-				StressSys.relieve(25.0)
-				GameState.smell_beer = true
-				GameState.add_hana(-4.0)
-				GameState.add_body(-4.0)
-				GameState.add_jealousy(4.0)
-				GameState.toast.emit("Beer down. Stress falls. Smell sticks to the suit and Hana has a nose.")
-		"slides":
-			if grade == "clean":
-				GameState.slides_filed = true
-				GameState.add_pip(-15.0)
-				GameState.add_face(6.0)
-			elif grade == "sloppy":
-				GameState.slides_filed = true
-				GameState.add_pip(15.0)
-				GameState.toast.emit("Sora's number survived. PIP reads the file at 18:00, not your face.")
-			else:
-				GameState.add_pip(35.0)
-		"kakao":
-			StressSys.add(3.0)
-			GameState.toast.emit("Replies sent. The building clock ran while the phone was open.")
-		"dash":
-			_resolve_dash(grade)
+# ---------------------------------------------------------------- engine verbs
+## Called from JSON via {"do":"engine","name":"<verb>"}.
 
-func _maybe_sora_snipe() -> void:
-	# Week 2+ or day>=2: Sora snipes the real pile if left unpinned.
+func sora_snipe() -> void:
+	# Day 2+ or week 2+: Sora snipes the real pile if left unpinned.
 	if DayClock.day >= 2 and not GameState.pinned_folder and not GameState.sora_sniped:
 		GameState.sora_sniped = true
 		GameState.add_pip(10.0)
 		GameState.toast.emit("Sora sniped the real pile while it sat unpinned. Her bad number is in your pack.")
 
-func _resolve_shuttle() -> void:
+func resolve_shuttle() -> void:
 	var t := DayClock.seconds_to_hard("shuttle")
 	if t < -0.5:
 		GameState.toast.emit("Missed the curb — the driver left. No skill. Pure time.")
@@ -524,30 +398,29 @@ func _resolve_shuttle() -> void:
 	GameState.add_hana(6.0)
 	GameState.promises["shuttle"] = true
 
-func _resolve_shop() -> void:
-	var cab := GameState.cabinet_state()
-	if cab == "good":
-		GameState.toast.emit("Good cabinet open (Hana ≥ 40). Quiet filter ₩90,000, grace key, alarm.")
-		if GameState.money >= GameState.FILTER_GOOD:
-			# Auto-offer quiet filter once.
-			pass
-	else:
-		GameState.toast.emit("Polite cabinet. Functional gear. No grace items. Couch sleep locks the good one.")
-	if GameState.sleep_place == "couch":
-		GameState.toast.emit("Sad shelf: buzzing filter, noodles, anime.")
+func resolve_restaurant() -> void:
+	if DayClock.weekday != 3:
+		GameState.toast.emit("The hoesik table only seats on Thursday.")
+		return
+	if DayClock.minutes < 18 * 60:
+		GameState.toast.emit("Not yet. The table seats at 19:00. The evening is long.")
+		return
+	DayClock.add_minutes(6)
+	load_room("restaurant")
+	GameState.toast.emit("Wrong direction from the station. The family train leaves at 19:40.")
 
-func _resolve_hoesik(grade: String) -> void:
+func resolve_hoesik(grade: String) -> void:
 	if not hoesik_refused_once and grade != "clean":
 		hoesik_refused_once = true
-		GameState.toast.emit("You refused the pour once. They noticed. Attendance still deletes the family train.")
+		GameState.toast.emit("You refused the pour once. They noticed. The family train survives tonight.")
 		return
-	GameState.toast.emit("Hoesik: the restaurant is the wrong direction from the station. Family train gone by geography.")
-	recital_missed = true
+	GameState.toast.emit("You poured. The restaurant is the wrong direction from the station. The train is gone by geography.")
+	GameState.recital_missed = true
 	StressSys.add(8.0)
 	GameState.add_face(4.0)
 	GameState.add_hana(-8.0)
 
-func _resolve_dash(grade: String) -> void:
+func resolve_dash(grade: String) -> void:
 	if grade == "clean":
 		play_audio("chime")
 		GameState.toast.emit("Clean line. Doors chimed and you were inside.")
@@ -568,6 +441,60 @@ func _resolve_dash(grade: String) -> void:
 		StressSys.add(16.0)
 		GameState.toast.emit("Missed it. Doors shut in front of you. Taxi only after the doors shut (Q → 2).")
 
+func resolve_prime(grade: String) -> void:
+	if grade == "sloppy":
+		GameState.fish_alive = DayClock.minutes < 24 * 60
+		StressSys.add(6.0)
+	else:
+		if DayClock.minutes >= 24 * 60:
+			GameState.fish_alive = false
+			GameState.toast.emit("Missed the prime after midnight. Saturday is an empty tank.")
+		StressSys.add(12.0)
+
+func resolve_shop() -> void:
+	# Good cabinet holds grace items. Couch sleep locks it (cabinet_state).
+	if GameState.cabinet_state() != "good":
+		GameState.toast.emit("Polite cabinet. Functional gear. No grace items. Couch sleep locks the good one.")
+		return
+	var bought := false
+	if not GameState.has_quiet_filter:
+		if GameState.spend(GameState.FILTER_GOOD):
+			GameState.has_quiet_filter = true
+			GameState.filter_state = "ok"
+			GameState.toast.emit("Quiet filter ₩90,000. The hum leaves the bedroom.")
+			bought = true
+	elif not GameState.has_grace_key:
+		if GameState.spend(GameState.GRACE_KEY):
+			GameState.has_grace_key = true
+			GameState.toast.emit("Grace key — one late arrival Park will not log.")
+			bought = true
+	elif not GameState.has_alarm:
+		if GameState.spend(GameState.ALARM):
+			GameState.has_alarm = true
+			GameState.toast.emit("Alarm. Tomorrow you start on time.")
+			bought = true
+	if not bought:
+		GameState.toast.emit("Good cabinet is bare. Everything that helps is already yours.")
+
+func bedtime() -> void:
+	if int(DayClock.minutes) % (24 * 60) > 21 * 60 + 30:
+		GameState.toast.emit("Kids' door is shut. Hana in the kitchen doing accounting.")
+	else:
+		GameState.add_kids(8.0)
+		GameState.add_hana(5.0)
+		StressSys.relieve(10.0)
+		GameState.toast.emit("Bedtime finished. Two interactions fit because you arrived early.")
+
+func sleep_bed() -> void:
+	var cab := GameState.cabinet_state()
+	advance_morning("bed_good" if cab == "good" else "bed_polite")
+
+func sleep_couch() -> void:
+	advance_morning("couch")
+
+func go_office_morning() -> void:
+	advance_morning("away" if DayClock.minutes > 24 * 60 else "bed_polite")
+
 func call_taxi() -> void:
 	# Taxi prompt appears only after the doors have shut.
 	var last := DayClock.seconds_to_hard("last_train")
@@ -580,7 +507,7 @@ func call_taxi() -> void:
 	StressSys.relieve(8.0)
 	GameState.add_body(-8.0)
 	GameState.toast.emit("Taxi ₩42,000. Home at 00:40, office smell included.")
-	DayClock.minutes = 24 * 60 + 10
+	DayClock.minutes = 24 * 60 + 40
 	load_room("apartment")
 
 func advance_morning(sleep: String) -> void:
@@ -589,6 +516,12 @@ func advance_morning(sleep: String) -> void:
 		play_audio("buzz")
 	if GameState.ended:
 		return
+	# Nuclear night: the recital was missed while the nanny covered and you
+	# still got home. Every net present, one night, no appeal.
+	if GameState.recital_missed and GameState.nanny_days > 0:
+		GameState.nuclear_night(true, true, true)
+		if GameState.ended:
+			return
 	GameState.day_count += 1
 	DayClock.day += 1
 	# Weekday advance: Tue(1)..Fri(4), Sat(5) short, Sun(6) skip to Mon(0).
@@ -600,10 +533,10 @@ func advance_morning(sleep: String) -> void:
 		DayClock.weekday = 0
 		DayClock.day += 1
 		GameState.day_count += 1
+	GameState.recital_missed = false
+	GameState.used_jobs_day.clear()
 	if DayClock.day > 60:
-		var end_id := GameState.check_day60_ending()
-		ending.show_ending("day60", end_id)
-		player.move_enabled = false
+		show_ending("day60", GameState.check_day60_ending())
 		return
 	# Friday salary. Overtime pays next Friday.
 	if DayClock.weekday == 4:
@@ -618,9 +551,10 @@ func advance_morning(sleep: String) -> void:
 	GameState.slides_filed = false
 	GameState.smell_beer = false
 	player.set_carry("")
+	hoesik_refused_once = false
+	SaveIO.autosave(self)
 	load_room("office")
-	# Nuclear check helper state reset
-	recital_missed = false
+	_day_briefing()
 
 func _on_hard(event_id: String) -> void:
 	match event_id:
@@ -631,11 +565,17 @@ func _on_hard(event_id: String) -> void:
 		"family_train":
 			play_audio("chime")
 			if current_room_id != "station" and current_room_id != "apartment":
-				GameState.toast.emit("19:40 family train — you are in the wrong building. Hana notices.")
+				if current_room_id == "restaurant":
+					GameState.toast.emit("19:40 family train — you are at the wrong table. Hana notices.")
+				else:
+					GameState.toast.emit("19:40 family train — you are in the wrong building. Hana notices.")
 				GameState.add_hana(-6.0)
 		"last_train":
 			play_audio("announce")
 			GameState.toast.emit("23:18 last train. Board flips to 05:12.")
+		"hoesik":
+			play_audio("ping")
+			GameState.toast.emit("19:00 hoesik — the table runs the wrong direction from the station.")
 		"pip_review":
 			if not GameState.slides_filed:
 				GameState.add_pip(40.0)
@@ -645,8 +585,7 @@ func _on_hard(event_id: String) -> void:
 	hud.refresh_board()
 
 func _on_game_over(kind: String, ending_id: String) -> void:
-	player.move_enabled = false
-	ending.show_ending(kind, ending_id)
+	show_ending(kind, ending_id)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("carry_drop") and player.carrying != "":
@@ -654,9 +593,5 @@ func _unhandled_input(event: InputEvent) -> void:
 		GameState.toast.emit("Set down the carry.")
 	if event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton
-		if mb.pressed and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and not menu.menu_open:
+		if mb.pressed and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and not menu.menu_open and not _paused:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	if event is InputEventKey:
-		var k := event as InputEventKey
-		if k.pressed and k.keycode == KEY_ESCAPE:
-			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE

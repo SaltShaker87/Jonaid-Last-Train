@@ -30,6 +30,9 @@ func _ready() -> void:
 	pin.activated.connect(_relay)
 	var pc := RoomBuilder.interactable(self, Vector3(2, 1.0, 2), Interactable.Weight.HEAVY, "Build the vendor slides (first person)", "slides_pc", "slides")
 	pc.activated.connect(_relay)
+	# Week 2+ PC: the resignation draft, unsent.
+	var draft := RoomBuilder.interactable(self, Vector3(2.7, 1.0, 2.3), Interactable.Weight.ERRAND, "Open the resignation draft (unsent)", "quit_draft_pc", "")
+	draft.activated.connect(_relay)
 	# Tube on desk (DO NOT COPY)
 	RoomBuilder.box_prop(self, Vector3(1.0, 0.95, 2.4), Vector3(0.9, 0.18, 0.18), Color(0.91, 0.87, 0.77), "DO NOT COPY tube")
 	var tube := RoomBuilder.interactable(self, Vector3(1.0, 1.0, 2.4), Interactable.Weight.ERRAND, "Haul the map tube", "take_tube", "")
@@ -47,6 +50,11 @@ func _ready() -> void:
 	_add_npc("Park", Vector3(-4, 0, -5), Color(0.25, 0.25, 0.30))
 	# Floor copier (jam manual)
 	RoomBuilder.box_prop(self, Vector3(-7, 0.6, -2), Vector3(1.1, 1.2, 0.9), Color(0.82, 0.82, 0.84), "FLOOR COPIER")
+	var copier_socket := Node3D.new()
+	copier_socket.name = "copier"
+	copier_socket.position = Vector3(-7, 0, -2)
+	add_child(copier_socket)
+	register_socket("copier", copier_socket)
 	var jam := RoomBuilder.interactable(self, Vector3(-7, 1.0, -0.8), Interactable.Weight.MANUAL, "Clear the copier jam", "copier_jam", "pour")
 	jam.activated.connect(_relay)
 	# Board by desk lists today's jobs with weights

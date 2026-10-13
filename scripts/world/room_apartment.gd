@@ -29,13 +29,26 @@ func _ready() -> void:
 	kids.activated.connect(_relay)
 	# Tank + filter (Chairman Bubbles cannot send KakaoTalk. He can only need power.)
 	RoomBuilder.box_prop(self, Vector3(7, 0.8, -2), Vector3(1.6, 1.2, 0.8), Color(0.35, 0.55, 0.65), "TANK — Chairman Bubbles")
+	var tank_socket := Node3D.new()
+	tank_socket.name = "tank"
+	tank_socket.position = Vector3(7, 0, -2)
+	add_child(tank_socket)
+	register_socket("tank", tank_socket)
 	var filt := RoomBuilder.interactable(self, Vector3(7, 1.0, -0.8), Interactable.Weight.MANUAL, "Seat the filter + hold the prime bulb", "fish_prime", "pour_prime")
 	filt.activated.connect(_relay)
+	# Saturday market: replace the fish if the tank went quiet.
+	var market := RoomBuilder.interactable(self, Vector3(8.4, 1.0, -1.0), Interactable.Weight.ERRAND, "Buy a new fish at the market (tank is empty)", "market_fish", "")
+	market.activated.connect(_relay)
 	# Bed / couch / shop shelf
 	RoomBuilder.box_prop(self, Vector3(-5, 0.6, -1), Vector3(2.2, 0.8, 3.0), Color(0.80, 0.75, 0.68), "BED")
 	var bed := RoomBuilder.interactable(self, Vector3(-5, 1.0, 0.8), Interactable.Weight.ERRAND, "Sleep in bed (good/polite cabinet by Hana)", "sleep_bed", "")
 	bed.activated.connect(_relay)
 	RoomBuilder.box_prop(self, Vector3(0, 0.5, 2.5), Vector3(2.4, 0.7, 1.2), Color(0.50, 0.35, 0.28), "COUCH — anime + buzzing filter")
+	var couch_socket := Node3D.new()
+	couch_socket.name = "couch"
+	couch_socket.position = Vector3(0, 0, 2.5)
+	add_child(couch_socket)
+	register_socket("couch", couch_socket)
 	var couch := RoomBuilder.interactable(self, Vector3(0, 1.0, 1.4), Interactable.Weight.ERRAND, "Sleep on couch (sad shelf, Jun hears filter 02:00)", "sleep_couch", "")
 	couch.activated.connect(_relay)
 	RoomBuilder.box_prop(self, Vector3(7, 1.0, 4.5), Vector3(2.0, 2.0, 0.6), Color(0.85, 0.66, 0.25), "GOOD CABINET / SAD SHELF")
@@ -45,6 +58,9 @@ func _ready() -> void:
 	RoomBuilder.box_prop(self, Vector3(-1, 0.85, -1), Vector3(0.6, 0.05, 0.4), Color(0.95, 0.95, 0.92), "SLIP — unsigned promise")
 	var slip := RoomBuilder.interactable(self, Vector3(-1, 1.0, -1), Interactable.Weight.ERRAND, "Sign Harin's slip", "sign_slip", "")
 	slip.activated.connect(_relay)
+	# Saturday gym: the only body the week pays for.
+	var gym := RoomBuilder.interactable(self, Vector3(-5.5, 1.0, 5.0), Interactable.Weight.ERRAND, "Walk to the gym (Saturday is the only body you get)", "gym_walk", "")
+	gym.activated.connect(_relay)
 	var out := RoomBuilder.interactable(self, Vector3(-7, 1.0, 6.2), Interactable.Weight.ERRAND, "Badge in — back to the office (next morning)", "go_office_morning", "")
 	out.activated.connect(_relay)
 	# --- Art pass: tungsten home, rug/shoes/polaroid, tank glow, suitcase telegraph ---

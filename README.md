@@ -1,7 +1,7 @@
-# JONAID: LAST TRAIN v0.2 — Korean salaryman simulator
+# JONAID: LAST TRAIN v0.3 — Korean salaryman simulator
 
 3D world, performed tasks, stress that gets into your hands.
-Godot 4 3D · Blender · MCP asset and placement pipe.
+Godot 4 3D · Blender · data-driven content pipe.
 
 > No MCP servers were detected in opencode config on this machine, so the
 > pipe runs via direct CLI (`Godot --headless`, `Blender --background --python`),
@@ -11,16 +11,38 @@ Godot 4 3D · Blender · MCP asset and placement pipe.
 ## Run
 
 - Open `project.godot` in Godot 4.7 (Godot.app on this machine).
-- Press Play. Title → **Start Tuesday 08:50**.
-- WASD walk · mouse look · E interact · Q phone · F drop · Shift sprint (low stress + high body).
+- Press Play. Title → **Start Tuesday 08:50** (or **Continue — last morning**, autosaved each morning).
+- WASD walk · mouse look · E interact · Q phone · F drop · Shift sprint (low stress + high body) · **Esc pause**.
 - White=errand · Gold=manual · Oxblood=heavy.
 
-Headless smoke:
+Headless gate (content + engine asserts, exits nonzero on failure):
 
 ```
-/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --quit-after 5 --auto-test
-/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --check-only --script res://scripts/world/main.gd
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --quit-after 120 --auto-test
 ```
+
+40s capture (needs a display; shots are gitignored, storyboard goes to `capture/storyboard.generated.md` — the hand-written `capture/storyboard.md` is never clobbered):
+
+```
+/Applications/Godot.app/Contents/MacOS/Godot --path . -- --capture
+```
+
+## Content pipeline — jobs are data, not code
+
+Every interactable resolves through `scripts/core/job_board.gd` and a declarative effect
+list interpreted by `scripts/core/effects.gd`:
+
+- `data/jobs/catalog.json` — the catalog. Each job: `id/weight/scene/skill/once`,
+  date gating (`days` OR `day_min`/`day_max`, `weekdays`, `requires`), and effects.
+- `data/jobs/days/*.json` — day defs (briefing + script lines) keyed by exact day,
+  else weekday with `from_day`. This is how weeks 2–12 exist without 60 files.
+- Effects vocabulary (one interpreter, ~12 verbs): `meter money flag promise carry
+  toast audio minutes travel engine ending`. `engine` verbs are the few genuinely
+  procedural hooks that live in `scripts/world/main.gd` (`resolve_shuttle`,
+  `resolve_dash`, `resolve_hoesik`, `resolve_shop`, `sleep_bed`, `sora_snipe`, …).
+- Gating runs in `load_room()`: interactables whose job is off today are hidden and
+  disabled. `once: "day"` / `once: "game"` consume jobs per day / per run.
+- A new joke is a JSON entry, not a match statement.
 
 ## Blender pipe
 
@@ -28,19 +50,25 @@ Headless smoke:
 /Applications/Blender.app/Contents/MacOS/Blender --background --python blender/export_props.py
 ```
 
-Outputs `assets/models/*.glb` with `SOCKET_*` empties. `RoomBuilder.try_swap_blender_model()`
-loads them if present, graybox otherwise. `tools/place_manifest.json` is the
-Godot-MCP placement manifest.
+Outputs `assets/models/*.glb` with `SOCKET_*` empties. Rooms register matching sockets
+(`copier`, `sedan`, `tank`, `couch`) so `RoomBuilder.try_swap_blender_model()` lands the
+model at the prop position. `tools/place_manifest.json` is the Godot-MCP placement manifest.
 
 ## Structure
 
-- `scripts/autoload/` DayClock (1s=20 game-sec, freeze + bill 20/45/30), StressSys (bands), GameState (6+2 meters, wins/losses)
-- `scripts/core/` Interactable (weight+prompt color), Salaryman (3rd-person carry/crowd), RoomBase, NPC, JobBoard
-- `scripts/world/` Main (day loop, travel, hard clocks, taxi, mornings, endings), RoomBuilder + rooms office/street/station/apartment/restaurant
-- `scripts/skills/` 5 kits: trace (lightbox), hold (bow/crop/prime/pour), digits (G90/sign), slides (vendor pack), kakao + dash overlay
-- `scripts/ui/` HUD (clock/stress/departures), Phone (no pause), MainMenu, EndingScreen
-- `data/jobs/` catalog.json (client/weight/scene/skill/clock/comply-defect) + tuesday.json sample Tuesday
-- `scenes/main.tscn` boots Main; rooms are built at runtime (graybox + glTF swap)
+- `scripts/autoload/` DayClock (1s=20 game-sec, freeze + bill 20/45/30), StressSys (bands), GameState (6+2 meters, endings, save export/import)
+- `scripts/core/` Interactable, Salaryman, RoomBase, NPC, **Effects (interpreter)**, **JobBoard (catalog/day loader + gating)**, **SaveIO (autosave)**
+- `scripts/world/` Main (day loop, travel, engine verbs, save calls), RoomBuilder + rooms office/street/station/apartment/restaurant, art_direction, Director
+- `scripts/skills/` 5 kits: trace (lightbox), hold (bow/crop/prime/pour), digits (G90/sign), slides, kakao + dash overlay
+- `scripts/ui/` HUD, Phone, MainMenu (+ Continue), EndingScreen, PauseMenu (Esc, tree.paused)
+- `scripts/tests/` TestRig — 65 headless asserts, runs under `--auto-test`
+- `data/jobs/` catalog.json + days/*.json; `data/jobs/days/` covers Tue→Mon so weeks 2–12 loop
+
+## Save / continue
+
+One slot at `user://save.cfg`, written every morning in `advance_morning()` (day, weekday,
+clock, meters, flags, used-jobs). "Start Tuesday" clears it. Content is data, so saves
+store meters — not the authored world.
 
 ## Locked calls (GDD §21)
 
@@ -50,22 +78,6 @@ English UI + Korean texture.
 
 ## Production order
 
-1. Floor+clock ✅ (office/street/station/apartment, badge-out, doors shut)
-2. Three skills ✅ (trace/bow/dash + stress bands, Tuesday tube→couch)
-3. Home invoice ✅ (cabinets, fish prime, beer, taxi, Hana routes)
-4. The knife ✅ (slides/Sora/PIP/nanny/G90/hoesik/endings)
-5. Dress+voice ✅ (this pass — see below)
-
-## Art pass (v0.2 §16)
-
-- Palette locked: `scripts/world/art_direction.gd` (espresso/gold/ivory/oxblood/subway).
-- Godot lights rooms: fluorescent office / tungsten home / subway platform edge glow; beds crossfade on travel.
-- Cast dressed: Jonaid oversized suit + shirt/tie/gold pin + 5 stress faces (brows+tint); Park/Choi/Sora/Hana bust language + KR nameplates.
-- Bilingual signage (EN + KR) + `DO NOT COPY` ivory-plate stamp readable at couch distance.
-- Blender re-export: beveled hero props + `heads.glb` (5) + `busts.glb` (4) — `tools/place_manifest.json` v2.
-- Audio mix: announce 0dB > chime -4 > turnstile/jam -8 > ping -10 > buzz -14; beds duck on travel.
-- 40s capture: `Godot --path . -- --capture` (needs display) → `capture/shot_*.png` + `capture/storyboard.md`.
-
-> Found your GDAI MCP (`~/Downloads/addons/gdai-mcp-plugin-godot`, v0.3.2 + `~/Documents/Empiric/addons/...`).
-> Left uninstalled on purpose — GDExtension native lib is risk without need; CLI pipe covers it.
-> Say the word and I'll drop it into `addons/` + wire `tools/place_manifest.json` to it.
+1. Floor+clock ✅ 2. Three skills ✅ 3. Home invoice ✅
+4. The knife ✅ 5. Dress+voice ✅
+6. Content is data ✅ (v0.3 — pipeline + weeks 2–12 + tests + save)

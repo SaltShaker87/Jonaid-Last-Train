@@ -8,6 +8,8 @@ var _points: PackedVector2Array = PackedVector2Array()
 var _drawn: PackedVector2Array = PackedVector2Array()
 var _tracing := false
 var _forced_done := false
+var _forced_jerk := 0.0
+var _forced_dir := Vector2(1.0, -0.6)
 var _time := 0.0
 var _lag_buf: PackedVector2Array = PackedVector2Array()
 var _info: Label
@@ -57,10 +59,14 @@ func start(p_stress: float, p_seed: int) -> void:
 		var t := float(i) / float(n) * TAU
 		var p := Vector2(r.get_center().x + cos(t) * r.size.x * 0.5, r.get_center().y + sin(t) * r.size.y * 0.5)
 		_points.append(p)
-	# Stamp text drawn by canvas.
-	if StressSys.has_forced_error() and not _forced_done:
-		# Forced error: first 15% of drawn points get a jerk (recoverable).
+	# Forced error: first strokes get one real jerk (recoverable), not a comment.
+	_forced_done = false
+	_forced_jerk = 0.0
+	if StressSys.has_forced_error():
 		_forced_done = true
+		_forced_jerk = 18.0
+		_rng.randomize()
+		_forced_dir = Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)).normalized()
 	_info.text = "LIGHTBOX 21:40 — stress %d (%s). Trace the boundary. Forced wobble above 80." % [int(p_stress), StressSys.band_name()]
 	queue_redraw()
 
@@ -76,6 +82,10 @@ func _process(delta: float) -> void:
 		while _lag_buf.size() > lag + 1:
 			_lag_buf.remove_at(0)
 		var p: Vector2 = _lag_buf[0] if _lag_buf.size() > lag else target
+		# Forced error: one big jerky pull at the start, decaying fast.
+		if _forced_jerk > 0.0:
+			p += _forced_dir * _forced_jerk
+			_forced_jerk = maxf(0.0, _forced_jerk - delta * 24.0)
 		# Noise shake.
 		var n := noise_px()
 		if n > 0.0:

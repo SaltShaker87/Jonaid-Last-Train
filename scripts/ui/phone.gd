@@ -64,7 +64,11 @@ func _home_text() -> String:
 	txt += "Kakao: Park sent a sticker. Hana: shuttle moved up?\n"
 	txt += "Taxi from wrong side of turnstile: ₩42,000, home 00:40, office smell.\n"
 	txt += "Nanny: hire by phone, then you SEE her. Jealousy is Hana not turning.\n"
-	txt += "Wallet ₩%d · Nanny days %d\n" % [GameState.money, GameState.nanny_days]
+	if GameState.day_script.size() > 0:
+		txt += "\nTODAY'S SCRIPT:\n"
+		for line in GameState.day_script:
+			txt += "  · %s\n" % line
+	txt += "\nWallet ₩%d · Nanny days %d\n" % [GameState.money, GameState.nanny_days]
 	return txt
 
 func _c(ev: String) -> String:
