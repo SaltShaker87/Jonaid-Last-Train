@@ -15,7 +15,7 @@ func _ready() -> void:
 	RoomBuilder.box_prop(self, Vector3(0, 0.8, 0), Vector3(4.0, 0.8, 2.0), Color(0.40, 0.28, 0.18), "HOESIK TABLE")
 	var pour := RoomBuilder.interactable(self, Vector3(0, 1.0, 1.4), Interactable.Weight.MANUAL, "Pour (refuse once, attendance costs the family train)", "hoesik_pour", "pour_beer")
 	pour.activated.connect(_relay)
-	var back := RoomBuilder.interactable(self, Vector3(-6, 1.0, 5.0), Interactable.Weight.ERRAND, "Back to street (too late for the family train)", "go_street", "")
+	var back := RoomBuilder.interactable(self, Vector3(-6, 1.0, 5.0), Interactable.Weight.ERRAND, "Leave the table (too late for the family train)", "leave_hoesik", "")
 	back.activated.connect(_relay)
 
 func _relay(inter: Interactable) -> void:

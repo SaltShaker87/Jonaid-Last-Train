@@ -21,6 +21,15 @@ Headless gate (content + engine asserts, exits nonzero on failure):
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --quit-after 120 --auto-test
 ```
 
+Scripted multi-day playtest (`--sim`) plays the real game like a person —
+every live job per room, scripted skill grades, night trains, mornings.
+Two runs: a clean 25-day survivor pass and a chaos pass that must reach a
+legal loss through the real game-over signals (~60s wall time):
+
+```
+/Applications/Godot.app/Contents/MacOS/Godot --headless -- --sim
+```
+
 40s capture (needs a display; shots are gitignored, storyboard goes to `capture/storyboard.generated.md` — the hand-written `capture/storyboard.md` is never clobbered):
 
 ```
@@ -61,7 +70,7 @@ model at the prop position. `tools/place_manifest.json` is the Godot-MCP placeme
 - `scripts/world/` Main (day loop, travel, engine verbs, save calls), RoomBuilder + rooms office/street/station/apartment/restaurant, art_direction, Director
 - `scripts/skills/` 5 kits: trace (lightbox), hold (bow/crop/prime/pour), digits (G90/sign), slides, kakao + dash overlay
 - `scripts/ui/` HUD, Phone, MainMenu (+ Continue), EndingScreen, PauseMenu (Esc, tree.paused)
-- `scripts/tests/` TestRig — 65 headless asserts, runs under `--auto-test`
+- `scripts/tests/` TestRig (65 headless asserts, `--auto-test`) + Playthrough (`--sim`, scripted multi-day runs)
 - `data/jobs/` catalog.json + days/*.json; `data/jobs/days/` covers Tue→Mon so weeks 2–12 loop
 
 ## Save / continue

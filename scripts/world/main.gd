@@ -56,6 +56,10 @@ func _ready() -> void:
 	if "--auto-test" in OS.get_cmdline_args() or OS.has_feature("dedicated_server"):
 		start_new_game()
 		TestRig.attach(self)
+	# Scripted multi-day playtest: --sim
+	if "--sim" in OS.get_cmdline_args():
+		start_new_game()
+		Playthrough.start(self)
 	# 40s capture: -- --capture (needs rendering; headless prints dry-run).
 	if "--capture" in OS.get_cmdline_user_args() or "--capture" in OS.get_cmdline_args():
 		start_new_game()
@@ -595,3 +599,4 @@ func _unhandled_input(event: InputEvent) -> void:
 		var mb := event as InputEventMouseButton
 		if mb.pressed and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and not menu.menu_open and not _paused:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
