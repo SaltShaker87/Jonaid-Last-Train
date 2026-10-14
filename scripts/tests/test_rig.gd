@@ -9,14 +9,14 @@ var _fail := 0
 var _game: Node
 
 static func attach(game: Node) -> void:
-	if not ("--auto-test" in OS.get_cmdline_args() or OS.has_feature("dedicated_server")):
+	if not ("--auto-test" in OS.get_cmdline_user_args() or "--auto-test" in OS.get_cmdline_args() or OS.has_feature("dedicated_server")):
 		return
 	var t: Node = load("res://scripts/tests/test_rig.gd").new()
 	t.name = "TestRig"
 	game.add_child(t)
 
 func _ready() -> void:
-	if not ("--auto-test" in OS.get_cmdline_args() or OS.has_feature("dedicated_server")):
+	if not ("--auto-test" in OS.get_cmdline_user_args() or "--auto-test" in OS.get_cmdline_args() or OS.has_feature("dedicated_server")):
 		return
 	# Let start_new_game() finish its room load.
 	await get_tree().process_frame
@@ -25,6 +25,8 @@ func _ready() -> void:
 	_test_content()
 	_test_gating()
 	_test_effects()
+	_test_content_contracts()
+	_test_face_ratchet()
 	_test_clock()
 	_test_stress()
 	_test_shop_and_save()
@@ -54,9 +56,10 @@ func _test_content() -> void:
 	_check(JobBoard.job("badge_out").has("on_use"), "nav job has instant effects")
 
 func _test_gating() -> void:
-	_check(JobBoard.available("lightbox_trace", 1, 1, "street"), "trace live day1 tuesday")
+	_check(not JobBoard.available("lightbox_trace", 1, 1, "street"), "trace hidden on day1 (week-2 content)")
 	_check(not JobBoard.available("lightbox_trace", 2, 2, "street"), "trace off day2 wednesday")
 	_check(JobBoard.available("lightbox_trace", 7, 1, "street"), "trace overlap day7 (week 2+)")
+	_check(not JobBoard.available("take_tube", 1, 1, "office"), "tube hidden on day1")
 	_check(not JobBoard.available("quit_draft_pc", 1, 1, "office"), "quit draft hidden before week 2")
 	_check(JobBoard.available("quit_draft_pc", 2, 2, "office"), "quit draft live day2")
 	_check(not JobBoard.available("go_restaurant", 1, 1, "street"), "restaurant door not Tuesday")
@@ -66,6 +69,124 @@ func _test_gating() -> void:
 	GameState.used_jobs_run["sign_slip"] = true
 	_check(not JobBoard.job_is_live("sign_slip", 1, 1, "apartment"), "once-game blocks re-use")
 	GameState.used_jobs_run.erase("sign_slip")
+
+## Regressions for the gate bugs: date-window AND, scene gating, atomic effect
+## lists, the money floor, once:"week", and the Face soft cap.
+func _test_content_contracts() -> void:
+	GameState.new_game()
+	var ctx := {"game": _game, "inter": null, "grade": "clean"}
+
+	# days list ANDed with day_min/day_max range.
+	var j := {"id": "t", "days": [1, 8], "day_min": 7}
+	_check(JobBoard._job_available(j, 8, 1, ""), "days+day_min: day 8 passes both")
+	_check(not JobBoard._job_available(j, 1, 1, ""), "days+day_min: day 1 in list but under floor fails")
+	_check(not JobBoard._job_available({"id": "t", "days": [3], "day_min": 7}, 3, 1, ""),
+	      "days+day_min: day 3 in list but under floor is rejected")
+	_check(JobBoard._job_available({"id": "t", "days": [3], "day_min": 1}, 3, 1, ""),
+	      "days only: listed day passes")
+	_check(JobBoard._job_available({"id": "t", "day_min": 7, "day_max": 9}, 8, 1, ""),
+	      "range only: inside window passes")
+	_check(not JobBoard._job_available({"id": "t", "day_min": 7, "day_max": 9}, 10, 1, ""),
+	      "range only: past day_max is rejected")
+
+	# Scene gating actually reads the authored singular "scene".
+	_check(JobBoard._job_available({"id": "t", "scene": "office"}, 1, 1, "office"),
+	      "scene: matching room passes")
+	_check(not JobBoard._job_available({"id": "t", "scene": "office"}, 1, 1, "street"),
+	      "scene: wrong room is rejected")
+	_check(JobBoard._job_available({"id": "t", "scene": "any"}, 1, 1, "station"),
+	      "scene: any matches everywhere")
+	_check(JobBoard._job_available({"id": "t"}, 1, 1, "street"), "scene: absent matches everywhere")
+
+	# An invalid entry anywhere in the list means none of it runs.
+	GameState.new_game()
+	Effects.apply_list([
+		{"do": "meter", "name": "face", "delta": 5.0},
+		{"do": "flag", "name": "no_such_flag", "value": true},
+		{"do": "meter", "name": "kids", "delta": 5.0},
+	], ctx)
+	_check(GameState.face == 50.0 and GameState.kids == 60.0,
+	      "bad flag in list applies nothing (atomic)")
+	Effects.apply_list([{"do": "meter", "name": "no_such_meter", "delta": 5.0}], ctx)
+	_check(GameState.face == 50.0, "bad meter in list applies nothing (atomic)")
+	Effects.apply_list([{"do": "meter", "name": "face", "delta": 5.0},
+	                    {"do": "flag", "name": "pinned_folder", "value": true}], ctx)
+	_check(GameState.face == 55.0 and GameState.pinned_folder,
+	      "valid list still applies in full")
+
+	# Money floor: no code path drives the balance negative.
+	GameState.new_game()
+	GameState.money = 1000
+	Effects.apply_list([{"do": "money", "delta": -500000}], ctx)
+	_check(GameState.money == 1000, "money floor: poverty aborts before going negative")
+	GameState.import_state({"money": -999999})
+	_check(GameState.money >= 0, "money floor: a negative save is clamped on load")
+
+	# once:"week" consumes within a week and releases on rollover.
+	GameState.new_game()
+	var wk := {"id": "g90_sign", "weekdays": [0, 1, 2, 3, 4], "once": "week"}
+	_check(JobBoard._is_live(wk, 1, 1, "street", "g90_sign"), "once-week: live before use")
+	GameState.used_jobs_week[JobBoard.week_key("g90_sign")] = true
+	_check(not JobBoard._is_live(wk, 1, 2, "street", "g90_sign"), "once-week: blocked after use")
+	GameState.week += 1
+	_check(JobBoard._is_live(wk, 1, 3, "street", "g90_sign"), "once-week: free again next week")
+
+	# Face soft cap: above 80 a positive delta lands smaller than below it.
+	GameState.new_game()
+	GameState.face = 60.0
+	GameState.add_face(10.0)
+	var under := GameState.face - 60.0
+	GameState.face = 90.0
+	GameState.add_face(10.0)
+	var over := GameState.face - 90.0
+	_check(over < under, "face soft cap: +10 above 80 lands less than +10 below it")
+	GameState.face = 95.0
+	GameState.add_face(10.0)
+	_check(GameState.face <= 100.0, "face soft cap: still clamps at 100")
+	GameState.face = 90.0
+	GameState.add_face(-10.0)
+	_check(is_equal_approx(GameState.face, 80.0), "face relief is never damped")
+
+## The ending must be a choice, not a default. Walks 60 days of Face through
+## the real add_face()/on_morning() math for two play styles and asserts they
+## resolve to different day-60 endings. This is the regression for the bug
+## where Face ratcheted to 100 for any worker and corner_cubicle crowded out
+## key_still_works entirely.
+func _test_face_ratchet() -> void:
+	GameState.game_over.disconnect(_game._on_game_over)
+
+	# Greedy: takes every face-raising office task, every weekday.
+	GameState.new_game()
+	var dusk := 0.0
+	for day in range(1, 61):
+		if day % 7 < 5:  # Mon..Thu-ish weekdays
+			GameState.add_face(10.0)   # g90_board, clean
+			GameState.add_face(6.0)    # bow_choi, clean
+			GameState.add_face(3.0)    # copier_jam
+		dusk = GameState.face         # face taken to work with
+		GameState.on_morning("bed_good")
+	GameState.pip = 10.0
+	GameState.map_resolved = true
+	var greedy := GameState.check_day60_ending(dusk)
+	_check(greedy == "corner_cubicle",
+	      "greedy 60-day worker lands in corner_cubicle, dusk face %.0f (got '%s')" % [dusk, greedy])
+	_check(dusk < 100.0, "greedy face is damped, not pinned (%.0f)" % dusk)
+
+	# Restrained: declines the G90 and the bow, keeps the honest work.
+	GameState.new_game()
+	for day in range(1, 61):
+		if day % 7 < 5:
+			GameState.add_face(3.0)    # copier_jam
+			GameState.add_face(-2.0)   # pin_folder
+		dusk = GameState.face
+		GameState.on_morning("bed_good")
+	GameState.pip = 10.0
+	GameState.map_resolved = true
+	var honest := GameState.check_day60_ending(dusk)
+	_check(honest == "key_still_works",
+	      "restrained 60-day worker reaches key_still_works, dusk face %.0f (got '%s')" % [dusk, honest])
+
+	GameState.game_over.connect(_game._on_game_over)
 
 func _test_effects() -> void:
 	GameState.new_game()
@@ -89,7 +210,11 @@ func _test_effects() -> void:
 	_check(not ok, "guarded spend aborts the list")
 	_check(GameState.money == money_before and GameState.face == 55.0, "abort left no partial state")
 	Effects.apply_list([{"do": "money", "delta": -600000}], ctx)
-	_check(GameState.money == money_before - 600000, "unguarded money delta opens the hole")
+	_check(GameState.money == money_before, "negative money delta aborts on poverty (no hole)")
+	Effects.apply_list([{"do": "money", "earn": 900000}], ctx)
+	Effects.apply_list([{"do": "money", "delta": -600000}], ctx)
+	_check(GameState.money == money_before + 300000, "negative money delta spends when affordable")
+	GameState.money = money_before
 	Effects.apply_list([{"do": "promise", "name": "slip_signed", "value": true}], ctx)
 	_check(bool(GameState.promises.get("slip_signed", false)), "promise set")
 	Effects.apply_list([{"do": "carry", "value": "map_tube"}], ctx)

@@ -23,11 +23,19 @@ Headless gate (content + engine asserts, exits nonzero on failure):
 
 Scripted multi-day playtest (`--sim`) plays the real game like a person —
 every live job per room, scripted skill grades, night trains, mornings.
-Two runs: a clean 25-day survivor pass and a chaos pass that must reach a
-legal loss through the real game-over signals (~60s wall time):
+Three runs per launch, each reporting per-meter min/max/avg plus a tally of
+jobs fired vs skipped, so balance findings are measured rather than eyeballed:
+
+1. **clean** — grades lean clean/sloppy; must survive 25 days.
+2. **greed** — every task signed perfectly for 60 days; asserts the balance
+   stays solvent and Face is damped rather than pinned.
+3. **chaos** — skills mostly fail; the run must reach a legal loss through
+   the real game-over signal.
+
+Exits nonzero on any failed assertion (~90s wall time):
 
 ```
-/Applications/Godot.app/Contents/MacOS/Godot --headless -- --sim
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path . -- --sim
 ```
 
 40s capture (needs a display; shots are gitignored, storyboard goes to `capture/storyboard.generated.md` — the hand-written `capture/storyboard.md` is never clobbered):
@@ -42,7 +50,7 @@ Every interactable resolves through `scripts/core/job_board.gd` and a declarativ
 list interpreted by `scripts/core/effects.gd`:
 
 - `data/jobs/catalog.json` — the catalog. Each job: `id/weight/scene/skill/once`,
-  date gating (`days` OR `day_min`/`day_max`, `weekdays`, `requires`), and effects.
+  date gating (`days` ANDed with `day_min`/`day_max`, `weekdays`, `requires`), and effects.
 - `data/jobs/days/*.json` — day defs (briefing + script lines) keyed by exact day,
   else weekday with `from_day`. This is how weeks 2–12 exist without 60 files.
 - Effects vocabulary (one interpreter, ~13 verbs): `meter money flag promise carry
@@ -51,7 +59,14 @@ list interpreted by `scripts/core/effects.gd`:
   `resolve_dash`, `resolve_hoesik`, `resolve_shop`, `sleep_bed`, `sora_snipe`, …).
   `vfx` fires world effects (`stamp_thump`, `doors_shut`) so content can hit props.
 - Gating runs in `load_room()`: interactables whose job is off today are hidden and
-  disabled. `once: "day"` / `once: "game"` consume jobs per day / per run.
+  disabled. `weight` in the catalog is authoritative — it overrides the room default
+  so the two can never drift. `once: "day" | "week" | "game"` consume jobs per day,
+  per calendar week (cleared on the Sunday→Monday rollover), or per run. An
+  unrecognised `once` value toasts rather than silently behaving as unlimited.
+- A whole effect list is validated before any of it runs, so a typo in the last
+  effect cannot leave the first three applied.
+- `money` with a negative `delta` routes through the guarded spend: the list aborts
+  on poverty instead of driving the balance negative.
 - A new joke is a JSON entry, not a match statement.
 
 ## Blender pipe
@@ -71,7 +86,7 @@ model at the prop position. `tools/place_manifest.json` is the Godot-MCP placeme
 - `scripts/world/` Main (day loop, travel, engine verbs, save calls), RoomBuilder + rooms office/street/station/apartment/restaurant, art_direction, Director, **vfx (stamp glow, door slide, motes)**
 - `scripts/skills/` 5 kits: trace (lightbox), hold (bow/crop/prime/pour), digits (G90/sign), slides, kakao + dash overlay
 - `scripts/ui/` HUD, Phone, MainMenu (+ Continue), EndingScreen, PauseMenu (Esc, tree.paused)
-- `scripts/tests/` TestRig (65 headless asserts, `--auto-test`) + Playthrough (`--sim`, scripted multi-day runs)
+- `scripts/tests/` TestRig (101 headless asserts, `--auto-test`) + Playthrough (`--sim`, three scripted multi-day profiles)
 - `data/jobs/` catalog.json + days/*.json; `data/jobs/days/` covers Tue→Mon so weeks 2–12 loop
 
 ## Save / continue

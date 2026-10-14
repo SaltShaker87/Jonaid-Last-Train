@@ -53,11 +53,11 @@ func _ready() -> void:
 	menu.new_game_pressed.connect(start_new_game)
 	menu.continue_pressed.connect(continue_game)
 	# Headless smoke path: allow --auto-test to boot without menu.
-	if "--auto-test" in OS.get_cmdline_args() or OS.has_feature("dedicated_server"):
+	if "--auto-test" in OS.get_cmdline_user_args() or "--auto-test" in OS.get_cmdline_args() or OS.has_feature("dedicated_server"):
 		start_new_game()
 		TestRig.attach(self)
-	# Scripted multi-day playtest: --sim
-	if "--sim" in OS.get_cmdline_args():
+	# Scripted multi-day playtest: --sim (accepts both `-- --sim` and `--sim`)
+	if "--sim" in OS.get_cmdline_user_args() or "--sim" in OS.get_cmdline_args():
 		start_new_game()
 		Playthrough.start(self)
 	# 40s capture: -- --capture (needs rendering; headless prints dry-run).
@@ -310,6 +310,9 @@ func _mark_used(inter: Interactable, job: Dictionary) -> void:
 			GameState.used_jobs_day[inter.job_id] = true
 			inter.disabled = true
 			inter.visible = false
+		"week":
+			# Stays visible: the point of a weekly job is that it comes back.
+			GameState.used_jobs_week[JobBoard.week_key(inter.job_id)] = true
 		"game":
 			GameState.used_jobs_run[inter.job_id] = true
 			inter.disabled = true
@@ -528,6 +531,9 @@ func call_taxi() -> void:
 	load_room("apartment")
 
 func advance_morning(sleep: String) -> void:
+	# Snapshot before the night pull: the day-60 verdict reads the face you
+	# turned up with, not the one a good night's sleep repaired.
+	var face_dusk := GameState.face
 	GameState.on_morning(sleep)
 	if sleep == "couch":
 		play_audio("buzz")
@@ -550,10 +556,14 @@ func advance_morning(sleep: String) -> void:
 		DayClock.weekday = 0
 		DayClock.day += 1
 		GameState.day_count += 1
+		# Week counter drives once:"week" consumption. Do not derive it from
+		# DayClock.day: the Sunday skip advances `day` twice, so day/7 drifts.
+		GameState.week += 1
+		GameState.used_jobs_week.clear()
 	GameState.recital_missed = false
 	GameState.used_jobs_day.clear()
 	if DayClock.day > 60:
-		show_ending("day60", GameState.check_day60_ending())
+		show_ending("day60", GameState.check_day60_ending(face_dusk))
 		return
 	# Friday salary. Overtime pays next Friday.
 	if DayClock.weekday == 4:

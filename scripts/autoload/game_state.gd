@@ -38,7 +38,9 @@ var quit_draft: bool = false       # week 2+ PC: resignation, unsent
 var couch_nights: int = 0          # three couch nights kill the filter
 var day_script: Array = []         # today's script lines (phone texture)
 var used_jobs_day: Dictionary = {} # once-per-day consume
+var used_jobs_week: Dictionary = {} # once-per-week consume, keyed "id:week"
 var used_jobs_run: Dictionary = {} # once-per-run consume
+var week: int = 1                # rolls over on the Sunday->Monday skip
 
 const FOOD_TRANSIT := 18000
 const TAXI := 42000
@@ -50,6 +52,11 @@ const GRACE_KEY := 55000
 const ALARM := 30000
 const NEW_FISH := 15000
 const G90_DEPOSIT := 600000
+
+# Face. Soft cap damps gains, night pull bleeds the mask back off at home.
+const FACE_SOFT_CAP := 80.0
+const FACE_NIGHT_PULL := 0.6
+const FACE_HOME := 50.0    # the face you were born with, under the one you wear
 
 func new_game() -> void:
 	hana = 60.0; kids = 60.0; face = 50.0; body = 80.0
@@ -63,7 +70,8 @@ func new_game() -> void:
 	has_quiet_filter = false; sleep_place = ""; day_count = 1; ended = false
 	recital_missed = false; quit_draft = false; couch_nights = 0
 	day_script = []
-	used_jobs_day.clear(); used_jobs_run.clear()
+	used_jobs_day.clear(); used_jobs_week.clear(); used_jobs_run.clear()
+	week = 1
 	StressSys.set_stress(20.0)
 	meters_changed.emit()
 
@@ -76,7 +84,12 @@ func add_kids(v: float) -> void:
 	kids = clampf(kids + v, 0.0, 100.0)
 	meters_changed.emit()
 
+## Face above FACE_SOFT_CAP gets diminishing returns. The pressure stays
+## legible (deltas still register) but 80->100 becomes a grind instead of a
+## wall, which is what keeps the honest day-60 ending reachable.
 func add_face(v: float) -> void:
+	if v > 0.0 and face > FACE_SOFT_CAP:
+		v *= 1.0 - (face - FACE_SOFT_CAP) / 40.0
 	face = clampf(face + v, 0.0, 100.0)
 	meters_changed.emit()
 
@@ -104,7 +117,7 @@ func spend(v: int) -> bool:
 	return true
 
 func earn(v: int) -> void:
-	money += v
+	money = maxi(0, money + v)
 	meters_changed.emit()
 
 func _check_divorce_morning() -> void:
@@ -141,8 +154,20 @@ func on_morning(sleep: String) -> void:
 		"away":
 			StressSys.add(10.0)
 			add_body(-20.0)
+	_face_night_pull()
 	_check_divorce_morning()
 	meters_changed.emit()
+
+## The face comes off at home. Without a night pull, Face is a ratchet: every
+## office task only ever adds, so any worker ends pinned at 100 and the honest
+## day-60 ending is unreachable. Each morning the excess bleeds back toward
+## FACE_HOME. Equilibrium is FACE_HOME + (daily net gain / FACE_NIGHT_PULL),
+## which is what makes corner_cubicle a choice: sign everything and you drift
+## over the corner_cubicle line, decline the worst of it and you do not.
+func _face_night_pull() -> void:
+	if absf(face - FACE_HOME) < 0.01:
+		return
+	face = clampf(face - (face - FACE_HOME) * FACE_NIGHT_PULL, 0.0, 100.0)
 
 func nuclear_night(recital_missed: bool, nanny_home: bool, first_train: bool) -> bool:
 	if recital_missed and nanny_home and first_train and not ended:
@@ -151,16 +176,22 @@ func nuclear_night(recital_missed: bool, nanny_home: bool, first_train: bool) ->
 		return true
 	return false
 
-func check_day60_ending() -> String:
+func check_day60_ending(face_at_dusk: float = -1.0) -> String:
 	# GDD §13 day-60 endings, most specific first. The honest non-copy path
 	# is rarer and better than merely surviving.
+	#
+	# face_at_dusk is the Face you took to work with. Face decays overnight, so
+	# reading the meter after a night's sleep would let a good night's rest
+	# erase a whole career of bowing -- and would make the verdict depend on
+	# which weekday the run happened to end on.
+	var face_v := face if face_at_dusk < 0.0 else face_at_dusk
 	if pip >= 100.0:
 		return "fired"
 	if hana <= 0.0:
 		return "divorced"
 	if not fish_alive:
 		return "chairman_bubbles"
-	if face >= 70.0:
+	if face_v >= 70.0:
 		return "corner_cubicle"
 	if money >= 5000000 and kids < 40.0:
 		return "sold_filter"
@@ -170,7 +201,10 @@ func check_day60_ending() -> String:
 		return "clerk_yoon_right"
 	if hana >= 50.0 and pip <= 30.0 and fish_alive:
 		return "key_still_works"
-	return "key_still_works"
+	# Reached day 60 having copied, but the office or the marriage took the
+	# match. Kept as the catch-all so the honest branch above actually gates
+	# something instead of being shadowed by a duplicate return.
+	return "corner_cubicle"
 
 func cabinet_state() -> String:
 	# Good cabinet opens if affection >= 40 and arrived before kids' door shut.
@@ -199,7 +233,9 @@ func export_state() -> Dictionary:
 		"recital_missed": recital_missed, "quit_draft": quit_draft,
 		"couch_nights": couch_nights,
 		"used_jobs_day": used_jobs_day.duplicate(),
+		"used_jobs_week": used_jobs_week.duplicate(),
 		"used_jobs_run": used_jobs_run.duplicate(),
+		"week": week,
 	}
 
 func import_state(d: Dictionary) -> void:
@@ -235,7 +271,11 @@ func import_state(d: Dictionary) -> void:
 	couch_nights = int(d.get("couch_nights", couch_nights))
 	if d.has("used_jobs_day"):
 		used_jobs_day = (d["used_jobs_day"] as Dictionary).duplicate()
+	if d.has("used_jobs_week"):
+		used_jobs_week = (d["used_jobs_week"] as Dictionary).duplicate()
 	if d.has("used_jobs_run"):
 		used_jobs_run = (d["used_jobs_run"] as Dictionary).duplicate()
+	week = maxi(1, int(d.get("week", week)))
+	money = maxi(0, money)
 	StressSys.set_stress(maxf(StressSys.value, 10.0))
 	meters_changed.emit()

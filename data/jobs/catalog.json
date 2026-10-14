@@ -91,7 +91,6 @@
       "scene": "office",
       "skill": "none",
       "prompt": "Haul the DO NOT COPY tube",
-      "days": [1],
       "day_min": 7,
       "weekdays": [1],
       "once": "day",
@@ -133,7 +132,6 @@
       "scene": "office",
       "skill": "slides",
       "prompt": "Build the vendor slides (first person)",
-      "hard_clock": "18:00 Fri",
       "weekdays": [0, 1, 2, 3, 4],
       "on_use": [
         {"do": "engine", "name": "sora_snipe"}
@@ -166,7 +164,8 @@
       "on_use": [
         {"do": "flag", "name": "quit_draft", "value": true},
         {"do": "meter", "name": "stress", "delta": -15},
-        {"do": "toast", "text": "A draft: resignation, unsent. You close the laptop before Park walks by."}
+        {"do": "meter", "name": "face", "delta": -8},
+        {"do": "toast", "text": "A draft: resignation, unsent. You close the laptop before Park walks by. The face you keep stops being the only face you have."}
       ]
     },
     {
@@ -257,8 +256,6 @@
       "scene": "street",
       "skill": "trace",
       "prompt": "Trace on the lightbox (follow the boundary)",
-      "hard_clock": "20:00",
-      "days": [1],
       "day_min": 7,
       "weekdays": [1],
       "once": "day",
@@ -288,7 +285,6 @@
       "scene": "street",
       "skill": "digits_g90",
       "prompt": "Close three luxury cars on ₩180,000",
-      "hard_clock": "20:00",
       "weekdays": [0, 1, 2, 3, 4],
       "on_grade": {
         "clean": [
@@ -313,6 +309,7 @@
       "skill": "digits_sign",
       "prompt": "Sign the deposit on your card (₩600,000 hole)",
       "weekdays": [0, 1, 2, 3, 4],
+      "once": "week",
       "on_grade": {
         "clean": [
           {"do": "money", "delta": -600000},
@@ -400,7 +397,6 @@
       "scene": "station",
       "skill": "dash",
       "prompt": "Dash the platform before the doors shut",
-      "hard_clock": "23:18",
       "on_grade": {
         "clean": [{"do": "engine", "name": "resolve_dash", "args": ["$grade"]}],
         "sloppy": [{"do": "engine", "name": "resolve_dash", "args": ["$grade"]}],
@@ -465,7 +461,6 @@
       "scene": "apartment",
       "skill": "pour_prime",
       "prompt": "Seat the filter + hold the prime bulb",
-      "hard_clock": "midnight",
       "on_grade": {
         "clean": [
           {"do": "flag", "name": "filter_state", "value": "ok"},

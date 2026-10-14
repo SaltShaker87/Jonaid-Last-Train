@@ -69,28 +69,27 @@ static func available(job_id: String, day: int, weekday: int, scene: String) -> 
 	return _job_available(j, day, weekday, scene)
 
 static func _job_available(j: Dictionary, day: int, weekday: int, scene: String) -> bool:
-	# Date window: explicit list OR open range (day_min/day_max).
-	var day_ok := true
+	# Date window: an explicit "days" list and a day_min/day_max range are
+	# ANDed when both are authored. ORing them let "days":[1] + "day_min":7
+	# collapse to "day 1 OR day>=7", which put week-2 content on day 1.
 	var has_day := j.has("days") or j.has("day_min") or j.has("day_max")
 	if has_day:
-		day_ok = false
-		if j.has("days") and _num_in(day, j["days"]):
-			day_ok = true
+		if j.has("days") and not _num_in(day, j["days"]):
+			return false
 		var lo: int = int(j.get("day_min", 0))
 		var hi: int = int(j.get("day_max", 9999))
-		if day >= lo and day <= hi:
-			day_ok = true
-	if not day_ok:
-		return false
+		if day < lo or day > hi:
+			return false
 	var wd_ok := true
 	var has_wd := j.has("weekdays")
 	if has_wd and not _num_in(weekday, j["weekdays"]):
 		wd_ok = false
 	if not wd_ok:
 		return false
-	# Scene: "any"/missing matches everywhere; else the room id must be listed.
-	if j.has("scenes") and scene != "":
-		if not (scene in (j["scenes"] as Array)) and not ("any" in (j["scenes"] as Array)):
+	# Scene: "any"/missing matches everywhere; else the room id must match.
+	# Data authors a singular "scene" string; "scenes" arrays stay accepted.
+	if scene != "":
+		if not _scene_matches(j, scene):
 			return false
 	if not Effects.check_requires(j.get("requires", {}), day, weekday):
 		return false
@@ -132,21 +131,38 @@ static func apply_gating(room: Node, day: int, weekday: int) -> void:
 		return
 	var scene := String(room.get("room_id")) if room.get("room_id") != null else ""
 	for n in tree.get_nodes_in_group("interactables"):
-			var inter := n as Interactable
-			if inter == null:
-				continue
-			if inter != room and not room.is_ancestor_of(inter):
-				continue
-			var j := job(inter.job_id)
-			if j.is_empty():
-				# Unauthored id: leave as-is but shout once for content hygiene.
-				GameState.toast.emit("[content] no job authored for id: %s" % inter.job_id)
-				continue
-			if j.has("prompt"):
-				inter.prompt_text = String(j["prompt"])
-			var on := _is_live(j, day, weekday, scene, inter.job_id)
-			inter.visible = on
-			inter.disabled = not on
+		var inter := n as Interactable
+		if inter == null:
+			continue
+		if inter != room and not room.is_ancestor_of(inter):
+			continue
+		var j := job(inter.job_id)
+		if j.is_empty():
+			# Unauthored id: leave as-is but shout once for content hygiene.
+			GameState.toast.emit("[content] no job authored for id: %s" % inter.job_id)
+			continue
+		if j.has("prompt"):
+			inter.prompt_text = String(j["prompt"])
+		# Data owns the weight so a room can never silently disagree with the
+		# catalog. Unknown/absent weight leaves the room's own default alone.
+		var w := weight_from_job(j)
+		if w >= 0:
+			inter.weight = w
+		var on := _is_live(j, day, weekday, scene, inter.job_id)
+		inter.visible = on
+		inter.disabled = not on
+
+## Map the catalog's "errand"/"manual"/"heavy" string to Interactable.Weight.
+## Returns -1 when the job does not author a weight we recognise.
+static func weight_from_job(j: Dictionary) -> int:
+	match String(j.get("weight", "")):
+		"errand":
+			return Interactable.Weight.ERRAND
+		"manual":
+			return Interactable.Weight.MANUAL
+		"heavy":
+			return Interactable.Weight.HEAVY
+	return -1
 
 ## JSON numbers arrive as floats; compare numerically, never int-in-float-array.
 static func _num_in(value: int, arr) -> bool:
@@ -156,6 +172,19 @@ static func _num_in(value: int, arr) -> bool:
 				return true
 	return false
 
+## Scene gating accepts the authored singular "scene" string (the form every
+## job in catalog.json actually uses) and the legacy "scenes" array.
+static func _scene_matches(j: Dictionary, scene: String) -> bool:
+	if j.has("scene"):
+		var one := String(j["scene"])
+		return one == "any" or one == scene
+	if j.has("scenes"):
+		var arr := j["scenes"] as Array
+		if arr.has(scene) or arr.has("any"):
+			return true
+		return false
+	return true
+
 ## Date/scene/requires availability AND once-consumed state.
 static func _is_live(j: Dictionary, day: int, weekday: int, scene: String, job_id: String) -> bool:
 	if not _job_available(j, day, weekday, scene):
@@ -163,9 +192,20 @@ static func _is_live(j: Dictionary, day: int, weekday: int, scene: String, job_i
 	match String(j.get("once", "")):
 		"day":
 			return not GameState.used_jobs_day.has(job_id)
+		"week":
+			return not GameState.used_jobs_week.has(week_key(job_id))
 		"game":
 			return not GameState.used_jobs_run.has(job_id)
-	return true
+		_:
+			# Unrecognised `once` values are a content bug: treating them as
+			# unlimited is how a "once":"week" typo silently becomes infinite.
+			if not String(j.get("once", "")).is_empty():
+				GameState.toast.emit("[content] unknown once mode: %s" % String(j["once"]))
+			return true
+
+## Weekly consumption is keyed by week so the dict can be cleared on rollover.
+static func week_key(job_id: String) -> String:
+	return "%s:%d" % [job_id, GameState.week]
 
 ## Public form of the live check for Main to re-verify before firing.
 static func job_is_live(job_id: String, day: int, weekday: int, scene: String) -> bool:

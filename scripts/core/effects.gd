@@ -5,7 +5,7 @@ class_name Effects
 ##
 ## Verbs (closed set):
 ##   meter  {"do":"meter","name":"hana|kids|face|body|pip|jealousy|stress","delta":float}
-##   money  {"do":"money","delta":int}            unguarded (the hole)
+##   money  {"do":"money","delta":int}            negative = guarded spend, aborts on poverty
 ##          {"do":"money","spend":int}            guarded, aborts the list on poverty
 ##          {"do":"money","earn":int}
 ##   flag   {"do":"flag","name":<alias>,"value":bool|int|string}   (aliases below)
@@ -40,13 +40,45 @@ const FLAG_ALIAS := {
 }
 
 ## Apply a list. Returns false when an effect aborts (guarded spend).
+##
+## Two passes: the whole list is validated before any of it runs, so a typo
+## in the last effect can never leave the first three already applied.
 static func apply_list(list: Array, ctx: Dictionary) -> bool:
 	if list == null:
 		return true
+	if not validate_list(list):
+		return false
 	for e in list:
 		if e is Dictionary:
 			if not apply_one(e as Dictionary, ctx):
 				return false
+	return true
+
+## Dry-run every entry. Reports the first structural problem as a [content]
+## toast and returns false so the caller can skip the list untouched.
+static func validate_list(list: Array) -> bool:
+	if list == null:
+		return true
+	for e in list:
+		if not (e is Dictionary):
+			GameState.toast.emit("[content] effect entry is not an object")
+			return false
+		var d := e as Dictionary
+		match String(d.get("do", "")):
+			"meter":
+				var mn := String(d.get("name", ""))
+				if mn != "stress" and not (mn in METERS):
+					GameState.toast.emit("[content] unknown meter: %s" % mn)
+					return false
+			"flag":
+				var fk := String(d.get("name", ""))
+				if not FLAG_ALIAS.has(fk):
+					GameState.toast.emit("[content] unknown flag: %s" % fk)
+					return false
+			"engine":
+				pass  # verb names resolve against Main at call time
+			_:
+				pass
 	return true
 
 static func apply_one(e: Dictionary, ctx: Dictionary) -> bool:
@@ -66,10 +98,14 @@ static func apply_one(e: Dictionary, ctx: Dictionary) -> bool:
 			else:
 				GameState.toast.emit("[content] unknown meter: %s" % name)
 		"money":
+			# A negative delta is spending, so it goes through the guard: the
+			# list aborts on poverty rather than driving money negative.
 			var d := int(e.get("delta", 0))
-			if d != 0:
-				GameState.money += d
-				GameState.meters_changed.emit()
+			if d < 0:
+				if not GameState.spend(-d):
+					return false
+			elif d > 0:
+				GameState.earn(d)
 			var sp := int(e.get("spend", 0))
 			if sp != 0:
 				if not GameState.spend(sp):
