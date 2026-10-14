@@ -157,6 +157,19 @@ func play_audio(n: String) -> void:
 		if p != null and p.stream != null:
 			p.play()
 
+## Content-facing VFX hook (GDD §16 pass): catalog effects call
+## {"do":"vfx","name":"stamp_thump"} and the visible prop answers.
+func vfx(name: String) -> void:
+	match name:
+		"stamp_thump":
+			for n in get_tree().get_nodes_in_group("vfx_stamp"):
+				if n is StampFX:
+					(n as StampFX).thump()
+		"doors_shut":
+			for n in get_tree().get_nodes_in_group("vfx_door"):
+				if n is DoorFX:
+					(n as DoorFX).close()
+
 func _crossfade_beds(to_home: bool) -> void:
 	var office := audio_players.get("bed_office") as AudioStreamPlayer
 	var home := audio_players.get("bed_home") as AudioStreamPlayer

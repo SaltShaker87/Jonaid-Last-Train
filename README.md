@@ -45,10 +45,11 @@ list interpreted by `scripts/core/effects.gd`:
   date gating (`days` OR `day_min`/`day_max`, `weekdays`, `requires`), and effects.
 - `data/jobs/days/*.json` — day defs (briefing + script lines) keyed by exact day,
   else weekday with `from_day`. This is how weeks 2–12 exist without 60 files.
-- Effects vocabulary (one interpreter, ~12 verbs): `meter money flag promise carry
-  toast audio minutes travel engine ending`. `engine` verbs are the few genuinely
+- Effects vocabulary (one interpreter, ~13 verbs): `meter money flag promise carry
+  toast audio minutes travel engine ending vfx`. `engine` verbs are the few genuinely
   procedural hooks that live in `scripts/world/main.gd` (`resolve_shuttle`,
   `resolve_dash`, `resolve_hoesik`, `resolve_shop`, `sleep_bed`, `sora_snipe`, …).
+  `vfx` fires world effects (`stamp_thump`, `doors_shut`) so content can hit props.
 - Gating runs in `load_room()`: interactables whose job is off today are hidden and
   disabled. `once: "day"` / `once: "game"` consume jobs per day / per run.
 - A new joke is a JSON entry, not a match statement.
@@ -67,7 +68,7 @@ model at the prop position. `tools/place_manifest.json` is the Godot-MCP placeme
 
 - `scripts/autoload/` DayClock (1s=20 game-sec, freeze + bill 20/45/30), StressSys (bands), GameState (6+2 meters, endings, save export/import)
 - `scripts/core/` Interactable, Salaryman, RoomBase, NPC, **Effects (interpreter)**, **JobBoard (catalog/day loader + gating)**, **SaveIO (autosave)**
-- `scripts/world/` Main (day loop, travel, engine verbs, save calls), RoomBuilder + rooms office/street/station/apartment/restaurant, art_direction, Director
+- `scripts/world/` Main (day loop, travel, engine verbs, save calls), RoomBuilder + rooms office/street/station/apartment/restaurant, art_direction, Director, **vfx (stamp glow, door slide, motes)**
 - `scripts/skills/` 5 kits: trace (lightbox), hold (bow/crop/prime/pour), digits (G90/sign), slides, kakao + dash overlay
 - `scripts/ui/` HUD, Phone, MainMenu (+ Continue), EndingScreen, PauseMenu (Esc, tree.paused)
 - `scripts/tests/` TestRig (65 headless asserts, `--auto-test`) + Playthrough (`--sim`, scripted multi-day runs)

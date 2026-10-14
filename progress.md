@@ -1,6 +1,8 @@
 # Progress — Jonaid: Last Train
 
 ## Done
+- **VFX pass (v0.3.1 — this session):** `scripts/world/vfx.gd` + `vfx_stamp.gd` + `vfx_door.gd` (CPUParticles3D, GL-compatible, palette-locked). The DO NOT COPY stamp is a live prop: oxblood emissive plate + pulsing light + rising motes; pinning the folder fires a thump through the real content path (`catalog.json` → `{"do":"vfx","name":"stamp_thump"}` → Main.vfx → StampFX.thump). Station doors have weight: slabs slide, oxblood seam light breathes, platform dust puff on shut. Every room gets ambient motes in its own light color (fluorescent office, tungsten street/home, subway platform). A capture beat at 21s pins the folder so the effect is reviewable in shots.
+- **Scripted playtest done:** `--sim` plays the real game multi-day (25-day clean survivor + chaos run reaching `fired` at Day 3 through the real signal), zero content errors. Balance findings below.
 - **End-to-end game (GDD v0.2):** Godot 4.7 project boots title → Tuesday 08:50 day loop → endings. DayClock (1s = 20 game-sec, skills freeze + bill 20/45/30), StressSys bands, GameState meters (Hana/Kids/Face/Body/Money + hidden PIP/Jealousy), Interactable weights (white/gold/oxblood), third-person Salaryman with carry/crowd/sprint rules.
 - **World + skills:** office 14F / street-Mullae / station / apartment / restaurant rooms; 5 skill kits (trace, hold, digits, slides, kakao + dash overlay); hard clocks (shuttle 18:10, family 19:40, last 23:18, hoesik Thu 19:00, pip_review Fri 18:00), taxi-after-doors (₩42,000, home 00:40), morning invoice, day-60 endings.
 - **Art pass:** palette locked (`art_direction.gd`), fluorescent office / tungsten home / platform glow, bilingual signage, readable DO NOT COPY plate, dressed Jonaid (oversized suit + 5 stress faces) and NPC bust language, Blender re-export of 8 GLB hero props, remixed 6 audio beds with mix levels + crossfading beds (dedicated looping bed wavs).
@@ -11,9 +13,9 @@
 - **Capture (progress.md step 1 — done):** ran with a display (`Godot --path . -- --capture`), 20 shots + generated storyboard; reviewed shot_00/shot_11 for couch distance — fixed the doubled `[E] [ERRAND] [E]` prompt prefix (data prompts no longer carry `[E]`).
 
 ## Next steps
-1. **Interactive playtest with a display** (the `--sim` scripted pass is green — 25 clean days + chaos-fail endings, no content errors): a human still needs to feel the trace wobble, the hoesik refusal beat, and the couch-buzz night at 1280×720; tune clock scale, crowd slow, skill windows from that feel.
-2. **Balance findings from the scripted playtest:** the honest worker's Face pins to 100 by week 2, so `corner_cubicle` crowds out `key_still_works` at day 60; weekly money sinks ~₩1.3M if G90 is signed every day (sign is repeatable, hole is not). Decide whether Face should soften above ~80 and whether `g90_sign` should be once-per-week.
-3. **Dress + voice:** VFX (stamp glow, door close, particle motes), Korean VO/texture pass, composed beds/chime/announcements to replace the reused chime/buzz loops.
+1. **Interactive playtest with a display**: a human still needs to feel the trace wobble, the hoesik refusal beat, the stamp thump and the couch-buzz night at 1280×720; tune clock scale, crowd slow, skill windows from that feel.
+2. **Balance decisions from the scripted playtest:** the honest worker's Face pins to 100 by week 2, so `corner_cubicle` crowds out `key_still_works` at day 60; weekly money sinks ~₩1.3M if G90 is signed every day (sign is repeatable, hole is not). Decide whether Face should soften above ~80 and whether `g90_sign` should be once-per-week.
+3. **Dress + voice:** Korean VO/texture pass, composed beds/chime/announcements to replace the reused chime/buzz loops.
 4. **Optional:** GDAI-MCP install into `addons/` + wire `tools/place_manifest.json`; heads.glb/busts.glb from reference-only to runtime NPCs.
 5. **Verify export builds** on a machine with Godot export templates installed (`godot --headless --export-release "macOS"` / `"Windows Desktop"`; presets are authored but untested here).
 6. **Keep this file updated** after each session: move finished items to Done, re-list Next.

@@ -34,7 +34,8 @@ func _build_steps() -> void:
 		[5.0, "Yoon refuses — lightbox sloppy, 45min billed", "_beat_lightbox"],
 		[11.0, "Shuttle curb 18:10 — badge out with tube", "_beat_shuttle"],
 		[16.0, "Turnstile + crowd + platform stumble", "_beat_station"],
-		[23.0, "Home — slip signed, bedtime, tank prime", "_beat_home"],
+		[21.0, "Pin the folder — stamp thump (VFX pass)", "_beat_stamp"],
+		[25.0, "Home — slip signed, bedtime, tank prime", "_beat_home"],
 		[30.0, "Couch buzz 02:00 — Jun hears the filter", "_beat_couch"],
 		[35.0, "Morning — Sora sniped, slides sloppy, PIP reads file", "_beat_morning"],
 	]
@@ -111,6 +112,31 @@ func _beat_lightbox() -> void:
 	DayClock.bill_skill("sloppy")
 	StressSys.add(10.0)
 	game.call("play_audio", "jam")
+
+func _beat_stamp() -> void:
+	# VFX pass beat: stand at the desk and pin — the stamp thump fires
+	# through the real content path (pin_folder -> {"do":"vfx"}).
+	game.call("load_room", "office")
+	DayClock.minutes = 8 * 60 + 55
+	# Let the room load land first: set_player_spawn would overwrite an
+	# immediate teleport.
+	await get_tree().create_timer(0.4).timeout
+	var jonaid := game.get("player") as Salaryman
+	if jonaid != null:
+		# Stand left of the desk so the glowing plate is clear of the torso.
+		jonaid.set_carry("")
+		jonaid.global_position = Vector3(3.0, 0.2, 2.6)
+		var to_stamp := (Vector3(1.0, 1.42, 2.42) - jonaid.global_position).normalized()
+		jonaid.cam_yaw = atan2(to_stamp.x, to_stamp.z)
+	GameState.used_jobs_day.erase("pin_folder")  # beat re-arms the stamp
+	for n in get_tree().get_nodes_in_group("interactables"):
+		var inter := n as Interactable
+		if inter != null and inter.job_id == "pin_folder":
+			inter.disabled = false
+			inter.visible = true
+			game.call("on_interact", inter)
+			break
+	game.call("play_audio", "ping")
 
 func _beat_shuttle() -> void:
 	DayClock.minutes = 18 * 60 + 2

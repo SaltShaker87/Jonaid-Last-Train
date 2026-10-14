@@ -67,6 +67,8 @@ func _ready() -> void:
 	RoomBuilder.ceiling(self, Vector2(18, 14))
 	RoomBuilder.tungsten_lamp(self, Vector3(-3, 2.4, -3.5), 1.1)
 	RoomBuilder.tungsten_lamp(self, Vector3(0, 2.4, 2.0), 0.8)
+	# VFX pass: warm dust hanging in the tungsten light.
+	VFX.motes(self, Vector3(-1, 2.2, 0), Vector3(7, 1.4, 5), ArtDirection.TUNGSTEN, 1.2, Vector3(0, 0.5, 0), 0.05)
 	RoomBuilder.rug(self, Vector3(-2, 0.03, 1.0), Vector2(5, 4), Color(0.45, 0.12, 0.12))
 	RoomBuilder.rug(self, Vector3(-7, 0.03, 4.2), Vector2(2.2, 1.4), Color(0.30, 0.22, 0.16))
 	RoomBuilder.bilingual(self, Vector3(-7, 1.6, 5.2), "HOME", "집", ArtDirection.GOLD)

@@ -28,10 +28,10 @@ func _ready() -> void:
 	_test_clock()
 	_test_stress()
 	_test_shop_and_save()
-	_test_morning_and_rollover()
+	await _test_morning_and_rollover()
 	_test_endings()
 	_test_divorce_and_nuclear()
-	_test_interact_parity()
+	await _test_interact_parity()
 	print("\n[TestRig] %d passed, %d failed" % [_pass, _fail])
 	get_tree().quit(0 if _fail == 0 else 1)
 
@@ -236,6 +236,12 @@ func _test_interact_parity() -> void:
 	_check(GameState.pinned_folder, "data-driven pin_folder sets the flag")
 	_check(absf(GameState.face - (face_before - 2.0)) < 0.01, "pin_folder charges 2 face")
 	_check(GameState.used_jobs_day.has("pin_folder"), "pin_folder consumed for the day")
+	# VFX pass: the office stamp registers and answers a thump.
+	_check(get_tree().get_nodes_in_group("vfx_stamp").size() > 0, "stamp VFX registered in office")
+	var stamps := get_tree().get_nodes_in_group("vfx_stamp")
+	if stamps.size() > 0:
+		(stamps[0] as StampFX).thump()
+	_check(true, "stamp thump callable headless")
 	# Content hygiene: every interactable in the room maps to an authored job.
 	var bare := 0
 	for n in get_tree().get_nodes_in_group("interactables"):

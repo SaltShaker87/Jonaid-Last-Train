@@ -68,6 +68,9 @@ func _ready() -> void:
 	RoomBuilder.bilingual(self, Vector3(-9, 2.6, 7.2), "ELEVATOR", "엘리베이터", ArtDirection.GOLD)
 	RoomBuilder.bilingual(self, Vector3(0.5, 2.6, 4.4), "HANSUNG 14F", "한성 14층", ArtDirection.GOLD)
 	ArtDirection.stamp_label(self, Vector3(1.0, 1.35, 2.4))
+	# VFX pass: the stamp is a live prop — pulse + thump on pin. Dust in the fluorescent light.
+	VFX.stamp(self, Vector3(1.0, 1.42, 2.42))
+	VFX.motes(self, Vector3(0, 2.1, 0), Vector3(9, 1.4, 6), ArtDirection.FLUORESCENT, 2.0, Vector3(0, 0.4, 0), 0.08)
 	# Attempt Blender swap (non-fatal).
 	RoomBuilder.try_swap_blender_model(self, "copier", "res://assets/models/copier.glb")
 

@@ -65,6 +65,7 @@
       "weekdays": [0, 1, 2, 3, 4],
       "once": "day",
       "on_use": [
+        {"do": "vfx", "name": "stamp_thump"},
         {"do": "flag", "name": "pinned_folder", "value": true},
         {"do": "meter", "name": "face", "delta": -2},
         {"do": "toast", "text": "Stamped. Park sees it. Face dips. PIP is safe."}

@@ -124,6 +124,9 @@ static func apply_one(e: Dictionary, ctx: Dictionary) -> bool:
 				game.callv(verb, argv)
 			else:
 				game.call(verb)
+		"vfx":
+			if game != null:
+				game.call("vfx", String(e.get("name", "")))
 		"ending":
 			if game != null:
 				game.call("show_ending", String(e.get("kind", "day60")), String(e.get("id", "")))

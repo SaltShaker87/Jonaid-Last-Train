@@ -66,6 +66,9 @@ func _ready() -> void:
 	RoomBuilder.tungsten_lamp(self, Vector3(-10, 2.2, -1.5), 1.2)
 	RoomBuilder.tungsten_lamp(self, Vector3(-2, 2.2, 2.2), 0.9)
 	ArtDirection.stamp_label(self, Vector3(-10, 1.7, -3.2))
+	# VFX pass: Yoon's copy-shop stamp glows too; night-air motes under the lamps.
+	VFX.stamp(self, Vector3(-10, 1.78, -3.22))
+	VFX.motes(self, Vector3(0, 3.0, 0), Vector3(16, 1.6, 3), ArtDirection.TUNGSTEN, 1.5, Vector3(0, 0.3, 0), 0.06)
 	RoomBuilder.try_swap_blender_model(self, "sedan", "res://assets/models/sedan.glb")
 
 func _relay(inter: Interactable) -> void:

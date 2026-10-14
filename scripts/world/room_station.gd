@@ -4,6 +4,7 @@ extends RoomBase
 
 var doors_open := true
 var _door_mesh: MeshInstance3D
+var _door_fx: DoorFX
 var _chime_t := 0.0
 
 func _ready() -> void:
@@ -28,6 +29,8 @@ func _ready() -> void:
 	# Platform edge + doors
 	RoomBuilder.box_prop(self, Vector3(10, 0.15, 0), Vector3(8, 0.3, 4.0), Color(0.30, 0.30, 0.33), "PLATFORM")
 	_door_mesh = RoomBuilder.box_prop(self, Vector3(12, 1.4, 0), Vector3(0.4, 2.4, 4.0), Color(0.15, 0.35, 0.55), "DOORS")
+	# VFX pass: doors with weight — slabs slide, seam flashes oxblood, dust puff.
+	_door_fx = VFX.door(self, Vector3(12, 0, 0), 4.0)
 	var dash := RoomBuilder.interactable(self, Vector3(8, 1.0, 0), Interactable.Weight.HEAVY, "Dash the platform before the doors shut", "platform_dash", "dash")
 	dash.activated.connect(_relay)
 	var back := RoomBuilder.interactable(self, Vector3(-13, 1.0, 2.0), Interactable.Weight.ERRAND, "Back to street (missed? taxi only after doors shut)", "go_street", "")
@@ -37,6 +40,8 @@ func _ready() -> void:
 	RoomBuilder.fluorescent_bank(self, Vector3(0, 3.05, 0), 4, 4.0)
 	RoomBuilder.platform_edge(self, Vector3(7.2, 0.35, -1.8))
 	RoomBuilder.platform_edge(self, Vector3(7.2, 0.35, 1.8))
+	# VFX pass: platform-air motes in the subway light.
+	VFX.motes(self, Vector3(4, 2.4, 0), Vector3(10, 1.6, 4), ArtDirection.SUBWAY, 1.5, Vector3(0, 0.6, 0), 0.05)
 	RoomBuilder.bilingual(self, Vector3(4, 2.6, -5.4), "LAST TRAIN 23:18", "막차 23:18", ArtDirection.GOLD)
 	RoomBuilder.bilingual(self, Vector3(-8, 2.4, 1.8), "TURNSTILE", "개찰구", ArtDirection.SUBWAY)
 	DayClock.hard_event.connect(_on_hard)
@@ -48,6 +53,9 @@ func _on_hard(event_id: String) -> void:
 			var mat := StandardMaterial3D.new()
 			mat.albedo_color = Color(0.55, 0.10, 0.12)
 			_door_mesh.material_override = mat
+		if _door_fx != null:
+			# Slabs slide, seam flashes, platform dust puff.
+			_door_fx.close()
 		GameState.toast.emit("Doors closed in front of you. The board flips to 05:12.")
 
 func _process(_delta: float) -> void:
