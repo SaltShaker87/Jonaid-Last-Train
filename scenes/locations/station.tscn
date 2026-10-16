@@ -1,0 +1,143 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/station.gd" id="1"]
+[ext_resource type="PackedScene" path="res://assets/models/station.glb" id="2"]
+[ext_resource type="PackedScene" path="res://assets/models/train.glb" id="3"]
+[ext_resource type="Script" path="res://scripts/world/door.gd" id="4"]
+[ext_resource type="Script" path="res://scripts/world/interactable.gd" id="5"]
+[ext_resource type="Script" path="res://scripts/world/quip.gd" id="6"]
+
+[sub_resource type="Environment" id="env"]
+background_mode = 1
+background_color = Color(0.05, 0.05, 0.07, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.9, 0.95, 1, 1)
+ambient_light_energy = 0.75
+tonemap_mode = 0
+glow_enabled = true
+glow_intensity = 0.4
+glow_bloom = 0.0
+glow_hdr_threshold = 1.4
+
+[sub_resource type="SystemFont" id="font"]
+font_names = PackedStringArray("Arial Rounded MT Bold", "Segoe UI", "Malgun Gothic")
+font_weight = 800
+
+[node name="Station" type="Node3D"]
+script = ExtResource("1")
+location_id = "station"
+display_name = "Mullae Station · 문래역 (Line 2)"
+clock_rate = 0.5
+
+[node name="Env" type="WorldEnvironment" parent="."]
+environment = SubResource("env")
+
+[node name="Key" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.939693, -0.317116, 0.128123, 0, 0.374607, 0.927184, -0.34202, -0.871268, 0.352015, 0, 10, 0)
+light_color = Color(0.95, 1, 1, 1)
+light_energy = 0.75
+shadow_enabled = true
+directional_shadow_max_distance = 40.0
+
+[node name="Model" parent="." instance=ExtResource("2")]
+
+[node name="Train" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, -0.5, 10)
+
+[node name="Model" parent="Train" instance=ExtResource("3")]
+
+[node name="BoardText" type="Label3D" parent="."]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 3.3, -4.24)
+pixel_size = 0.0055
+text = "NEXT"
+font = SubResource("font")
+font_size = 40
+outline_size = 0
+modulate = Color(1, 0.72, 0.18, 1)
+double_sided = false
+
+[node name="BoardText2" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.3, -3.76)
+pixel_size = 0.0055
+text = "NEXT"
+font = SubResource("font")
+font_size = 40
+outline_size = 0
+modulate = Color(1, 0.72, 0.18, 1)
+double_sided = false
+
+[node name="NameA" type="Label3D" parent="."]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -15, 2.93, 12.16)
+pixel_size = 0.006
+text = "문래  Mullae"
+font = SubResource("font")
+font_size = 48
+outline_size = 0
+modulate = Color(1, 1, 1, 1)
+outline_modulate = Color(0.11, 0.1, 0.14, 1)
+double_sided = false
+
+[node name="NameB" type="Label3D" parent="."]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 15, 2.93, 12.16)
+pixel_size = 0.006
+text = "문래  Mullae"
+font = SubResource("font")
+font_size = 48
+outline_size = 0
+modulate = Color(1, 1, 1, 1)
+outline_modulate = Color(0.11, 0.1, 0.14, 1)
+double_sided = false
+
+[node name="Exit" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.35, -9.7)
+pixel_size = 0.006
+text = "출구  EXIT ↑"
+font = SubResource("font")
+font_size = 48
+outline_size = 10
+modulate = Color(1, 0.85, 0.2, 1)
+outline_modulate = Color(0.11, 0.1, 0.14, 1)
+double_sided = false
+
+[node name="Spawns" type="Node3D" parent="."]
+
+[node name="from_street" type="Marker3D" parent="Spawns"]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, -6.6)
+
+[node name="Interactables" type="Node3D" parent="."]
+
+[node name="Stairs" type="Area3D" parent="Interactables"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8, 1, -9.4)
+script = ExtResource("4")
+prompt = "Go up to the street"
+radius = 1.2
+target = "street"
+spawn = "from_station"
+minutes = 1.5
+
+[node name="BoardTrain" type="Area3D" parent="Interactables"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 1, 6.7)
+script = ExtResource("5")
+prompt = "Board the train"
+radius = 4.0
+
+[node name="Bench" type="Area3D" parent="Interactables"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 1, -2.4)
+script = ExtResource("5")
+prompt = "Sit and wait for the next train"
+radius = 1.3
+
+[node name="Taxi" type="Area3D" parent="Interactables"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.2, 1, -7.6)
+script = ExtResource("5")
+prompt = "Call a taxi home (₩45,000)"
+radius = 1.4
+
+[node name="Vending" type="Area3D" parent="Interactables"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.5, 1, -2.5)
+script = ExtResource("6")
+prompt = "Buy a can of hot coffee"
+radius = 1
+lines = PackedStringArray("Hot can coffee. It burns my hands. I deserve this.", "The machine gave me two. A sign from the universe. A small one.")
+stress_delta = -3
+minutes = 1

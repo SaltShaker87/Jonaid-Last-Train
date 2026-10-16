@@ -1,108 +1,73 @@
-# JONAID: LAST TRAIN v0.3 — Korean salaryman simulator
+# Jonaid: Last Train
 
-3D world, performed tasks, stress that gets into your hands.
-Godot 4 3D · Blender · data-driven content pipe.
+A silly, over-the-top, cartoony salaryman survival game. You are Jonaid, a
+Korean office worker. Survive the boss, catch the last train, keep Hana from
+leaving you. Nobody wins; the score is how many days you last.
 
-> No MCP servers were detected in opencode config on this machine, so the
-> pipe runs via direct CLI (`Godot --headless`, `Blender --background --python`),
-> which exposes the same capability. If you add Godot-MCP / Blender-MCP servers
-> to `opencode.jsonc`, point them at `tools/place_manifest.json` + `blender/export_props.py`.
+**What the game is: [DESIGN.md](DESIGN.md).** Where it's at: [progress.md](progress.md).
 
-## Run
+Godot 4.7 (GL Compatibility) · Blender 5.2 for models.
+The pre-rebuild version is preserved at git tag `legacy-v0.3`.
 
-- Open `project.godot` in Godot 4.7 (Godot.app on this machine).
-- Press Play. Title → **Start Tuesday 08:50** (or **Continue — last morning**, autosaved each morning).
-- WASD walk · mouse look · E interact · Q phone · F drop · Shift sprint (low stress + high body) · **Esc pause**.
-- White=errand · Gold=manual · Oxblood=heavy.
+## Play
 
-Headless gate (content + engine asserts, exits nonzero on failure):
+Open `project.godot` in Godot 4.7 and press Play.
 
-```
-/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --quit-after 120 --auto-test
-```
+WASD move · mouse look · Shift run · E use · Esc pause
 
-Scripted multi-day playtest (`--sim`) plays the real game like a person —
-every live job per room, scripted skill grades, night trains, mornings.
-Three runs per launch, each reporting per-meter min/max/avg plus a tally of
-jobs fired vs skipped, so balance findings are measured rather than eyeballed:
+Debug builds only: F5 = +60 game minutes, F6/F7 = stress up/down,
+F8 = Hana's anger up, F9 = Park assigns a task now.
 
-1. **clean** — grades lean clean/sloppy; must survive 25 days.
-2. **greed** — every task signed perfectly for 60 days; asserts the balance
-   stays solvent and Face is damped rather than pinned.
-3. **chaos** — skills mostly fail; the run must reach a legal loss through
-   the real game-over signal.
-
-Exits nonzero on any failed assertion (~90s wall time):
+## Layout
 
 ```
-/Applications/Godot.app/Contents/MacOS/Godot --headless --path . -- --sim
+DESIGN.md                 what the game should be (source of truth)
+blender/                  Python scripts that build every model
+  lib.py                  shared helpers (materials, shapes, outline normals, export)
+  build_characters.py     the cast: rig + hand-keyed animations
+  build_world.py          office, street, station, train, home
+assets/models/*.glb       exported models (rebuild with the scripts below)
+scenes/main.tscn          Main: World + Player
+scenes/characters/        player.tscn + one scene per cast member
+scenes/locations/         office, street, station, home (edit these in Godot)
+data/tasks.json           Park's task catalog (add a task = add an entry)
+scripts/autoload/         Clock, Stress, Game (money, anger, score, message bus), Tasks (Park's queue), Sfx
+scripts/minigames/        Minigame base + word, excel, copier, stamp, coffee, bow
+scripts/main.gd           day loop, travel between locations, UI layers
+scripts/player/           Jonaid's controller + camera
+scripts/world/            Location, Interactable, Door, Quip, TaskStation, NPC, ToonKit, station/home/office logic
+scripts/ui/               HUD (clock, stress face, bubbles, Park's sticky-note list), minigame host, title, pause, game over
+shaders/outline.gdshader  cartoon outline pass
 ```
 
-40s capture (needs a display; shots are gitignored, storyboard goes to `capture/storyboard.generated.md` — the hand-written `capture/storyboard.md` is never clobbered):
+Locations are normal `.tscn` scenes. Spawn points are `Marker3D`s under
+`Spawns` (their -Z is the facing direction). Anything you can press E on is an
+`Area3D` with an `Interactable` script (`Door`, `Quip`, `SmokeSpot`, …);
+`Quip` takes a list of lines in the inspector, so small jokes need no code.
+`TaskStation` (a Quip) is where Park's tasks get done: its `station` matches
+the `station` field of tasks in `data/tasks.json`.
 
-```
-/Applications/Godot.app/Contents/MacOS/Godot --path . -- --capture
-```
+## Rebuilding models
 
-## Content pipeline — jobs are data, not code
-
-Every interactable resolves through `scripts/core/job_board.gd` and a declarative effect
-list interpreted by `scripts/core/effects.gd`:
-
-- `data/jobs/catalog.json` — the catalog. Each job: `id/weight/scene/skill/once`,
-  date gating (`days` ANDed with `day_min`/`day_max`, `weekdays`, `requires`), and effects.
-- `data/jobs/days/*.json` — day defs (briefing + script lines) keyed by exact day,
-  else weekday with `from_day`. This is how weeks 2–12 exist without 60 files.
-- Effects vocabulary (one interpreter, ~13 verbs): `meter money flag promise carry
-  toast audio minutes travel engine ending vfx`. `engine` verbs are the few genuinely
-  procedural hooks that live in `scripts/world/main.gd` (`resolve_shuttle`,
-  `resolve_dash`, `resolve_hoesik`, `resolve_shop`, `sleep_bed`, `sora_snipe`, …).
-  `vfx` fires world effects (`stamp_thump`, `doors_shut`) so content can hit props.
-- Gating runs in `load_room()`: interactables whose job is off today are hidden and
-  disabled. `weight` in the catalog is authoritative — it overrides the room default
-  so the two can never drift. `once: "day" | "week" | "game"` consume jobs per day,
-  per calendar week (cleared on the Sunday→Monday rollover), or per run. An
-  unrecognised `once` value toasts rather than silently behaving as unlimited.
-- A whole effect list is validated before any of it runs, so a typo in the last
-  effect cannot leave the first three applied.
-- `money` with a negative `delta` routes through the guarded spend: the list aborts
-  on poverty instead of driving the balance negative.
-- A new joke is a JSON entry, not a match statement.
-
-## Blender pipe
-
-```
-/Applications/Blender.app/Contents/MacOS/Blender --background --python blender/export_props.py
+```bash
+blender --background --factory-startup --python blender/build_characters.py
 ```
 
-Outputs `assets/models/*.glb` with `SOCKET_*` empties. Rooms register matching sockets
-(`copier`, `sedan`, `tank`, `couch`) so `RoomBuilder.try_swap_blender_model()` lands the
-model at the prop position. `tools/place_manifest.json` is the Godot-MCP placement manifest.
+```bash
+blender --background --factory-startup --python blender/build_world.py
+```
 
-## Structure
+Both accept `-- --only name1,name2` and `-- --preview DIR` (Workbench renders
+for a quick look). Layout numbers in `build_world.py` are in Godot
+coordinates, so they match the positions used in the scenes. After a rebuild,
+let the Godot editor reimport (or run `godot --headless --path . --import`).
 
-- `scripts/autoload/` DayClock (1s=20 game-sec, freeze + bill 20/45/30), StressSys (bands), GameState (6+2 meters, endings, save export/import)
-- `scripts/core/` Interactable, Salaryman, RoomBase, NPC, **Effects (interpreter)**, **JobBoard (catalog/day loader + gating)**, **SaveIO (autosave)**
-- `scripts/world/` Main (day loop, travel, engine verbs, save calls), RoomBuilder + rooms office/street/station/apartment/restaurant, art_direction, Director, **vfx (stamp glow, door slide, motes)**
-- `scripts/skills/` 5 kits: trace (lightbox), hold (bow/crop/prime/pour), digits (G90/sign), slides, kakao + dash overlay
-- `scripts/ui/` HUD, Phone, MainMenu (+ Continue), EndingScreen, PauseMenu (Esc, tree.paused)
-- `scripts/tests/` TestRig (101 headless asserts, `--auto-test`) + Playthrough (`--sim`, three scripted multi-day profiles)
-- `data/jobs/` catalog.json + days/*.json; `data/jobs/days/` covers Tue→Mon so weeks 2–12 loop
+## Screenshot tour
 
-## Save / continue
+```bash
+godot --path . -- --shots=/some/folder
+```
 
-One slot at `user://save.cfg`, written every morning in `advance_morning()` (day, weekday,
-clock, meters, flags, used-jobs). "Start Tuesday" clears it. Content is data, so saves
-store meters — not the authored world.
-
-## Locked calls (GDD §21)
-
-Third person except lightbox/slides first-person. World clock runs walking/typing.
-Skills freeze + bill. Returnee reads the stamp. One office loss, one apartment loss.
-English UI + Korean texture.
-
-## Production order
-
-1. Floor+clock ✅ 2. Three skills ✅ 3. Home invoice ✅
-4. The knife ✅ 5. Dress+voice ✅
-6. Content is data ✅ (v0.3 — pipeline + weeks 2–12 + tests + save)
+Plays a scripted tour (title, office, every minigame, a task station, Park
+catching a smoker, leaving before Park, street, station, train, home, day 2,
+meltdown, game over), saves a PNG at each stop and quits.

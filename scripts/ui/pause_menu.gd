@@ -1,55 +1,48 @@
-extends CanvasLayer
 class_name PauseMenu
-## Escape pause. The clock already respects get_tree().paused (DayClock);
-## this node runs with process_mode ALWAYS so it can un-pause itself.
+extends CanvasLayer
+## Esc menu. Runs while the tree is paused.
 
-var _game: Node
-var _root: Control
+signal resume_pressed
+signal title_pressed
 
-static func create(game: Node) -> PauseMenu:
-	var p := PauseMenu.new()
-	p.name = "PauseMenu"
-	p.layer = 70
-	p.process_mode = Node.PROCESS_MODE_ALWAYS
-	p._game = game
-	return p
+var _resume: Button
+
 
 func _ready() -> void:
+	layer = 35
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	var root := UiStyle.root_control(self)
+	var shade := ColorRect.new()
+	shade.color = Color(0.08, 0.07, 0.12, 0.6)
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.add_child(shade)
+	var v := VBoxContainer.new()
+	v.set_anchors_preset(Control.PRESET_CENTER)
+	v.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	v.grow_vertical = Control.GROW_DIRECTION_BOTH
+	v.add_theme_constant_override("separation", 12)
+	root.add_child(v)
+	var t := UiStyle.loud_label("PAUSED", 64, UiStyle.YELLOW, 12)
+	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(t)
+	var sub := UiStyle.loud_label("Park doesn't know about this button.", 18, UiStyle.PAPER, 5)
+	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(sub)
+	_resume = _button(v, "Resume", func() -> void: resume_pressed.emit())
+	_button(v, "Quit to title", func() -> void: title_pressed.emit())
+	_button(v, "Quit game", func() -> void: get_tree().quit())
 	visible = false
-	_root = Control.new()
-	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(_root)
-	var bg := ColorRect.new()
-	bg.color = Color(0.05, 0.04, 0.04, 0.82)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_root.add_child(bg)
-	var label := Label.new()
-	label.text = "PAUSED — the building clock stops with you"
-	label.add_theme_font_size_override("font_size", 40)
-	label.position = Vector2(80, 140)
-	label.size = Vector2(1100, 60)
-	_root.add_child(label)
-	var hint := Label.new()
-	hint.text = "WASD walk · mouse look · E interact · Q phone · F drop carry · Shift sprint\nWhite=errand · Gold=manual · Oxblood=heavy\n[Esc] resume"
-	hint.position = Vector2(80, 240)
-	hint.size = Vector2(1100, 120)
-	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_root.add_child(hint)
-	var resume := Button.new()
-	resume.text = "Resume"
-	resume.position = Vector2(80, 420)
-	resume.size = Vector2(240, 56)
-	resume.pressed.connect(func(): _game.call("toggle_pause"))
-	_root.add_child(resume)
-	var quit := Button.new()
-	quit.text = "Quit to title"
-	quit.position = Vector2(360, 420)
-	quit.size = Vector2(240, 56)
-	quit.pressed.connect(func(): _game.call("quit_to_title"))
-	_root.add_child(quit)
 
-func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventKey:
-		var k := event as InputEventKey
-		if k.pressed and k.keycode == KEY_ESCAPE and visible:
-			_game.call("toggle_pause")
+
+func _button(parent: Control, text: String, cb: Callable) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.custom_minimum_size = Vector2(280, 0)
+	b.pressed.connect(cb)
+	parent.add_child(b)
+	return b
+
+
+func open() -> void:
+	visible = true
+	_resume.grab_focus.call_deferred()
