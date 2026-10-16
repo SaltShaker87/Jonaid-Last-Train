@@ -1,0 +1,122 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/home.gd" id="1"]
+[ext_resource type="PackedScene" path="res://assets/models/home.glb" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/characters/hana.tscn" id="3"]
+[ext_resource type="Script" path="res://scripts/world/sleep_spot.gd" id="4"]
+[ext_resource type="Script" path="res://scripts/world/quip.gd" id="5"]
+
+[sub_resource type="ProceduralSkyMaterial" id="skymat"]
+sky_top_color = Color(0.05, 0.05, 0.14, 1)
+sky_horizon_color = Color(0.25, 0.2, 0.4, 1)
+ground_bottom_color = Color(0.05, 0.05, 0.08, 1)
+ground_horizon_color = Color(0.25, 0.2, 0.4, 1)
+sun_angle_max = 20.0
+
+[sub_resource type="Sky" id="sky"]
+sky_material = SubResource("skymat")
+
+[sub_resource type="Environment" id="env"]
+background_mode = 2
+sky = SubResource("sky")
+ambient_light_source = 2
+ambient_light_color = Color(1, 0.93, 0.82, 1)
+ambient_light_energy = 0.55
+tonemap_mode = 0
+glow_enabled = true
+glow_intensity = 0.4
+glow_bloom = 0.0
+glow_hdr_threshold = 1.4
+
+[node name="Home" type="Node3D"]
+script = ExtResource("1")
+location_id = "home"
+display_name = "Home · 우리 집"
+clock_rate = 0.0
+
+[node name="Env" type="WorldEnvironment" parent="."]
+environment = SubResource("env")
+
+[node name="Key" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.906308, -0.379847, 0.185264, 0, 0.438371, 0.898794, -0.422618, -0.814584, 0.397299, 0, 10, 0)
+light_color = Color(1, 0.9, 0.76, 1)
+light_energy = 0.8
+shadow_enabled = true
+directional_shadow_max_distance = 30.0
+
+[node name="Model" parent="." instance=ExtResource("2")]
+
+[node name="Lights" type="Node3D" parent="."]
+
+[node name="Dining" type="OmniLight3D" parent="Lights"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 1.9, -2)
+light_color = Color(1, 0.82, 0.55, 1)
+light_energy = 1.3
+omni_range = 6
+
+[node name="Living" type="OmniLight3D" parent="Lights"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 2.3, -2)
+light_color = Color(1, 0.88, 0.7, 1)
+light_energy = 0.8
+omni_range = 7
+
+[node name="Bedroom" type="OmniLight3D" parent="Lights"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.6, 2.3, -7)
+light_color = Color(1, 0.8, 0.6, 1)
+light_energy = 0.7
+omni_range = 5
+
+[node name="Entry" type="OmniLight3D" parent="Lights"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.3, 4.5)
+light_color = Color(1, 0.9, 0.75, 1)
+light_energy = 0.7
+omni_range = 5
+
+[node name="Spawns" type="Node3D" parent="."]
+
+[node name="door" type="Marker3D" parent="Spawns"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 5.1)
+
+[node name="NPCs" type="Node3D" parent="."]
+
+[node name="Hana" parent="NPCs" instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3.2)
+
+[node name="Interactables" type="Node3D" parent="."]
+
+[node name="Bed" type="Area3D" parent="Interactables"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.6, 1, -6.3)
+script = ExtResource("4")
+prompt = "Go to sleep (end the day)"
+radius = 1.3
+
+[node name="RiceCooker" type="Area3D" parent="Interactables"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 1, -1.2)
+script = ExtResource("5")
+prompt = "Eat cold rice out of the rice cooker"
+radius = 1
+lines = PackedStringArray("Cold rice, standing up, in the dark. Peak salaryman cuisine.", "The rice cooker sings a little song when I open it. It's the only one who's happy to see me.")
+stress_delta = -5
+
+[node name="TV" type="Area3D" parent="Interactables"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 1, -2)
+script = ExtResource("5")
+prompt = "Watch TV"
+radius = 1
+lines = PackedStringArray("A K-drama. The chaebol heir slaps someone with a fish. I feel seen.", "The news: 'Salarymen work the longest hours in the OECD.' I fall asleep halfway through.", "Home shopping channel. I almost buy a knife set. I don't need a knife set. I need a nap.")
+stress_delta = -4
+
+[node name="TalkHana" type="Area3D" parent="Interactables"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 3.2)
+script = ExtResource("5")
+prompt = "Talk to Hana"
+radius = 1
+lines = PackedStringArray("Your mother called. Twice. I told her you were dead. She asked if you'd eaten first.", "Jun needs ₩300,000 for coding camp. He's seven.", "Did you remember the thing? ...The THING, Jonaid.")
+speaker = NodePath("../../NPCs/Hana")
+
+[node name="Kids" type="Area3D" parent="Interactables"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 1, 1.2)
+script = ExtResource("5")
+prompt = "Peek into the kids' room"
+radius = 1
+lines = PackedStringArray("Jun fell asleep on his homework. Harin drew me as a zombie. It's accurate.", "Harin is awake. 'Appa, are we poor?' 'No, sweetie. Go to sleep.' (Yes.)")

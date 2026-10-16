@@ -1,33 +1,57 @@
-# Progress — Jonaid: Last Train
+# Progress
 
-## Done
-- **Gate + balance pass (v0.3.2 — this session):** fixed nine correctness bugs the headless gate was silently passing over, then fixed the two balance bugs from last session's Next-step #2 by mechanic rather than fudge factor.
-  - **Gating:** the date window was OR-ing `days` with `day_min`/`day_max`, so `lightbox_trace` and `take_tube` — both week-2+ content — were live on day 1. Now AND-ed. That exposed contradictory *data* on those two jobs (`days:[1]` plus `day_min:7` is unsatisfiable under AND); the stale `days` key was dropped, matching the authored intent of day-7+ Tuesdays. Scene gating was reading `"scenes"` (array) while every job authors `"scene"` (string) — it had never once filtered anything; both forms now work.
-  - **`--sim` never ran.** `main.gd` checked `get_cmdline_args()`, but the documented command puts `--sim` in `get_cmdline_user_args()`. Verified empirically: the README invocation produced no playtest output at all. Both arg lists are now checked, for `--sim` and `--auto-test` alike.
-  - **Dead authoring fields:** `"hard_clock"` was declared on 5 jobs and read by nothing (removed — the real clocks are per-weekday in `day_clock.gd`). `"weight"` was authored on all 36 jobs and ignored in favour of hardcoded room enums; the catalog is now authoritative, so a room can no longer disagree with its job.
-  - **Atomic effect lists:** a typo'd flag name aborted mid-list *after* earlier meter writes had already applied. Lists are now validated in full before anything runs.
-  - **Money floor:** `{"do":"money","delta":-N}` bypassed the guarded spend and had no floor, so the scripted playtest drove the balance to **₩-1,553,000**. Negative deltas now route through `spend()`, and a negative balance in a save file is clamped on load.
-- **Balance decisions made (was Next-step #2):** Face was a ratchet — every office job only ever added, so any worker pinned to 100 by day 5 and `corner_cubicle` crowded out `key_still_works` entirely. Three changes: `g90_sign` is now `once:"week"` (a new third consume mode, cleared on the Sunday→Monday rollover and persisted in saves), which kills the ~₩1.3M/week sink by construction; `add_face()` damps positive deltas above 80; and Face now bleeds back toward a home baseline of 50 each morning, so it is a resource with both directions rather than a one-way meter. The day-60 verdict reads the face you *took to work with*, because reading it post-sleep let a good night's rest erase a career of bowing and made the outcome depend on which weekday the run ended.
-  - This is now measured, not asserted by hand. The rig walks 60 days through the real math for two play styles: signing everything lands in `corner_cubicle` (dusk face 81), declining the G90 and the bow lands in `key_still_works` (dusk face 52). The honest ending is reachable, and greed costs you something.
-  - The old ending chain had a dead branch — `game_state.gd:171` and `:173` both returned `key_still_works`, so the honest condition gated nothing. Fixed, and `quit_draft_pc` now relieves Face so the honest route is pulled toward rather than merely un-gated.
-- **Sim is self-reporting (was Next-step #2's blocker):** `--sim` runs three profiles — clean (25 days), **greed** (60 days, every task signed), chaos (must reach a legal loss) — and each prints per-meter min/max/avg, how many days sat in the Face soft-cap zone, and a jobs-fired-vs-skipped tally. The old findings were hand-read off stdout. Greed currently finishes solvent (min ₩347,000, never negative, `g90_sign` firing 9× across 12 weeks and correctly skipped 43×).
-- **VFX pass (v0.3.1):** `scripts/world/vfx.gd` + `vfx_stamp.gd` + `vfx_door.gd` (CPUParticles3D, GL-compatible, palette-locked). The DO NOT COPY stamp is a live prop: oxblood emissive plate + pulsing light + rising motes; pinning the folder fires a thump through the real content path (`catalog.json` → `{"do":"vfx","name":"stamp_thump"}` → Main.vfx → StampFX.thump). Station doors have weight: slabs slide, oxblood seam light breathes, platform dust puff on shut. Every room gets ambient motes in its own light color (fluorescent office, tungsten street/home, subway platform). A capture beat at 21s pins the folder so the effect is reviewable in shots.
-- **Scripted playtest done:** `--sim` plays the real game multi-day (25-day clean survivor + greed + chaos run reaching `fired` at Day 4 through the real signal), zero content errors.
-- **End-to-end game (GDD v0.2):** Godot 4.7 project boots title → Tuesday 08:50 day loop → endings. DayClock (1s = 20 game-sec, skills freeze + bill 20/45/30), StressSys bands, GameState meters (Hana/Kids/Face/Body/Money + hidden PIP/Jealousy), Interactable weights (white/gold/oxblood), third-person Salaryman with carry/crowd/sprint rules.
-- **World + skills:** office 14F / street-Mullae / station / apartment / restaurant rooms; 5 skill kits (trace, hold, digits, slides, kakao + dash overlay); hard clocks (shuttle 18:10, family 19:40, last 23:18, hoesik Thu 19:00, pip_review Fri 18:00), taxi-after-doors (₩42,000, home 00:40), morning invoice, day-60 endings.
-- **Art pass:** palette locked (`art_direction.gd`), fluorescent office / tungsten home / platform glow, bilingual signage, readable DO NOT COPY plate, dressed Jonaid (oversized suit + 5 stress faces) and NPC bust language, Blender re-export of 8 GLB hero props, remixed 6 audio beds with mix levels + crossfading beds (dedicated looping bed wavs).
-- **Content is data (v0.3):** full data-driven pipeline. `catalog.json` (36 jobs) + `days/*.json` drive every interactable through the `Effects` interpreter (~13 verbs); ~130 lines of match-statement dispatch deleted from Main. Date gating (`days`/`day_min`/`weekdays`/`requires`/`scene`) + `once: "day"|"week"|"game"`. Weeks 2–12 exist as weekday day-files + week-2+ overlap jobs (quit-draft PC, day-7+ Tuesday trace-vs-prime, Thursday hoesik door, Saturday gym/market).
-- **Knife completed:** Thursday 19:00 hoesik → street door → restaurant (wrong direction from the station) → pour-or-attend vs family train; `recital_missed` + nanny home + train caught → `divorced_nuclear`. Shop is real (quiet filter ₩90k → grace key ₩55k → alarm ₩30k; polite cabinet gated). Filter lifecycle: buzzes on couch, dies on the 3rd couch night, repairs in a good bed. `clerk_yoon_right` (never copied/traced) + `quit_draft` (week-2+ PC, day 60, Hana ≥ 60) now reachable; sold_filter threshold fixed to ₩5M.
-- **Systems fixed:** double divorce-counting collapsed into one `_check_divorce_morning`; taxi toast/code now both 00:40; trace forced-error applies a real jerky pull at 80+ stress; kakao grades sloppy on an uncleared typo; director's hud guard and storyboard clobber fixed (generated beats go to `capture/storyboard.generated.md`); GLB swaps land on registered sockets (copier/sedan/tank/couch) instead of room origin.
-- **Tech:** headless test rig (`scripts/tests/test_rig.gd`) — 101 asserts on JobBoard gating, Effects verbs, clock billing, stress bands, morning rollover + Sunday skip, filter lifecycle, day-60 ending priority, divorce + nuclear paths, save round-trip, room content hygiene, and the Face ratchet. Scripted playtest (`scripts/tests/playthrough.gd`, `--sim`) — clean + greed + chaos. Autosave at morning (`user://save.cfg`) + Continue on the title. Esc pause menu (tree paused; clock already respects it). Export presets for macOS + Windows (`export_presets.cfg`).
-- **Capture (progress.md step 1 — done):** ran with a display (`Godot --path . -- --capture`), 20 shots + generated storyboard; reviewed shot_00/shot_11 for couch distance — fixed the doubled `[E] [ERRAND] [E]` prompt prefix (data prompts no longer carry `[E]`).
+The game was rebuilt from scratch on 2026-10-15 to match DESIGN.md. The old
+version (Face/Kids/PIP meters, 60-day run, floating 3D labels everywhere)
+lives at git tag `legacy-v0.3`.
 
-## Next steps
-1. **Interactive playtest with a display**: a human still needs to feel the trace wobble, the hoesik refusal beat, the stamp thump and the couch-buzz night at 1280×720; tune clock scale, crowd slow, skill windows from that feel. The Face work above is the main thing this pass should be judged against — does signing everything *feel* like it costs you the corner, or does the nightly decay read as an invisible tax?
-2. **Tune the Face curve with real play.** `FACE_NIGHT_PULL` (0.6) and `FACE_SOFT_CAP` (80) are set from a headless model, not from feel. If players don't notice the mask slipping at night, raise the pull or add a visible cue (HUD delta, phone line). Greed currently peaks at ~81 dusk and rests ~64.
-3. **Economy is loose.** With the G90 sink capped, a working player banks ~₩20M over 60 days. `sold_filter` is gated on `kids < 40` so it can't fire accidentally, but the balance is inert — consider a rent/bill sink or a higher `sold_filter` threshold.
-4. **Dress + voice:** Korean VO/texture pass, composed beds/chime/announcements to replace the reused chime/buzz loops.
-5. **Housekeeping (low risk, unstarted):** `_relay()` is copy-pasted verbatim across all five rooms and belongs on `RoomBase`; `_num_in()` is duplicated in `effects.gd` and `job_board.gd`; `DayClock.DAY_START_MIN` exists but 11 sites hardcode `8*60+50`; `hud.gd` re-prints clock strings that live in `day_clock.gd`. No lint config, no CI, and no AGENTS.md — the gate command is only discoverable from the README.
-6. **Optional:** GDAI-MCP install into `addons/` + wire `tools/place_manifest.json`; heads.glb/busts.glb from reference-only to runtime NPCs.
-7. **Verify export builds** on a machine with Godot export templates installed (`godot --headless --export-release "macOS"` / `"Windows Desktop"`; presets are authored but untested here).
-8. **Keep this file updated** after each session: move finished items to Done, re-list Next.
+## Done — Phase 0 + 1 (foundation)
+
+- **DESIGN.md** written from the owner's answers: no win state, score = days
+  survived, 12-minute office day, ~2-minute commute, frozen time at home,
+  stress 100 = meltdown, Hana's anger in 3 tiers with full = game over.
+- **Cast as rigged cartoon models** (Blender, scripted): Jonaid, Park, Sora,
+  Hana, Choi. Big heads, googly eyes, chunky suits. Shared skeleton with
+  Idle, Walk, Run, Bow, Talk, Angry, Smoke, Type, Sit, SitType, Freakout.
+- **Locations** (Blender, scripted, collision baked in): office 14F with
+  Park's glass office, meeting room, desk clusters, copier corner, pantry and
+  balcony with skyline; one-block street at dusk with shops, pojangmacha,
+  cars and the subway entrance; Mullae station with gates, screen doors and a
+  train; the apartment (living room, kitchen with rice cooker, bedroom).
+- **Cartoon look in Godot**: toon diffuse/specular, rim light on characters,
+  inverted-hull outlines (smoothed normals baked into vertex colour so boxes
+  don't crack), sun shadows through non-shadow-casting ceilings.
+- **Player**: third-person controller, over-the-shoulder spring-arm camera
+  that collides with walls and ceilings, walk/run blending, E to interact.
+- **Loop playable end to end**: title → day card → office (Park grumbles,
+  smoke break drains stress, coffee/snack/copier/inbox jokes, elevator locked
+  before 18:00) → street → station (live timetable board, trains arrive on
+  schedule and leave without you, bench fast-forward, taxi after the last
+  train) → home (Hana greets you by lateness tier, anger meter) → bed → next
+  day. Meltdown and Hana-leaves both end the run on a game-over screen with
+  stats and a saved best score.
+- **UI**: no 3D floating labels. Speech bubbles follow speakers' heads; HUD
+  with clock, drawn stress face, money, Hana meter; notifications; location
+  banners; pause menu.
+
+## Next
+
+1. **Phase 2 — office tasks.** Park's task queue (sticky notes with timers),
+   the first WarioWare minigames (Word typing, Excel, copier jam, stamp, coffee
+   order, bow), money per task, stress on failure/expiry, nunchi when leaving
+   before Park, Park catching you smoking.
+2. **Phase 3 — commute.** Random train delays with silly announcements, a
+   short ride segment, convenience-store gifts for Hana, taxi cutscene.
+3. **Phase 4 — home + endings.** Day summary screen, meltdown cutscene
+   variety (benign destruction + rare legendary ones), Hana-leaves cutscene.
+4. **Phase 5 — look & feel.** Sound (the old WAVs in assets/audio are unused),
+   facial expressions, more NPCs in the office and on the street, a chunkier
+   UI font (e.g. Jua, OFL) shipped with the game.
+5. **Phase 6 — home progression** (undecided).
+
+## Known gaps
+
+- Only playtested via the scripted screenshot tour, not by hand.
+- On Day 1 the elevator stays locked until 18:00 (12 real minutes). Use F5 in
+  debug builds to skip ahead.
+- There's nothing to earn money with yet (that's Phase 2), so the taxi takes
+  whatever you have.
