@@ -1,0 +1,108 @@
+{
+  "_readme": "Park's task catalog. game: word | excel | copier | stamp | coffee | bow. station: where Jonaid does it (see stations). deadline is in game minutes (office clock: 0.75 game-min per real second). pay in won. weight = how often it's picked. min_day = first day it can appear. params are passed to the minigame.",
+  "stations": {
+    "pc": "Your PC",
+    "copier": "Copier",
+    "stamp": "Stamp table",
+    "coffee": "Pantry",
+    "choi": "Meeting room"
+  },
+  "tasks": [
+    {
+      "id": "word_email", "game": "word", "station": "pc", "pay": 25000, "deadline": 75, "weight": 3, "min_day": 1,
+      "title": "Retype my email. BIGGER.",
+      "line": "My email to the director. Retype it. Bigger font. The font was the problem.",
+      "params": {"text": "Dear Director Choi, the numbers are fine. Please ignore the numbers."}
+    },
+    {
+      "id": "word_esteemed", "game": "word", "station": "pc", "pay": 25000, "deadline": 75, "weight": 2, "min_day": 1,
+      "title": "'Dear' -> 'Most Esteemed'",
+      "line": "Change every 'Dear' to 'Most Esteemed'. Respect is a font size.",
+      "params": {"text": "Most Esteemed Director, Most Esteemed Team, Most Esteemed Printer,"}
+    },
+    {
+      "id": "word_card", "game": "word", "station": "pc", "pay": 20000, "deadline": 75, "weight": 2, "min_day": 1,
+      "title": "My daughter's birthday card",
+      "line": "Write my daughter's birthday card. Make it sound like me.",
+      "params": {"text": "Happy birthday. Study hard. Work harder. Love, Department Head Park"}
+    },
+    {
+      "id": "word_printer", "game": "word", "station": "pc", "pay": 20000, "deadline": 75, "weight": 2, "min_day": 1,
+      "title": "Apology letter to the printer",
+      "line": "Write an apology to the printer. It knows what it did.",
+      "params": {"text": "Dear printer, I am sorry. Please print. Regards, Team 3"}
+    },
+    {
+      "id": "word_comic", "game": "word", "station": "pc", "pay": 30000, "deadline": 80, "weight": 1, "min_day": 2,
+      "title": "'No Comic Sans' x3",
+      "line": "Type 'I will not use Comic Sans' three times. HR wants proof.",
+      "params": {"text": "I will not use Comic Sans. I will not use Comic Sans. I will not use Comic Sans."}
+    },
+    {
+      "id": "word_final", "game": "word", "station": "pc", "pay": 20000, "deadline": 70, "weight": 2, "min_day": 1,
+      "title": "Rename the report",
+      "line": "The report title is wrong. Fix it. FINAL, final.",
+      "params": {"text": "Q3 Synergy Report FINAL final (real) (v7)"}
+    },
+    {
+      "id": "excel_q3", "game": "excel", "station": "pc", "pay": 30000, "deadline": 85, "weight": 3, "min_day": 1,
+      "title": "Q3 numbers from my napkin",
+      "line": "Put the Q3 numbers in Excel. They're on this napkin. Don't ask about the stain.",
+      "params": {"labels": ["Revenue", "Snacks", "Golf", "Misc"], "total": false}
+    },
+    {
+      "id": "excel_sum", "game": "excel", "station": "pc", "pay": 35000, "deadline": 85, "weight": 2, "min_day": 1,
+      "title": "Sum it BY HAND",
+      "line": "Add up the column. By hand. I don't trust formulas. Formulas have agendas.",
+      "params": {"labels": ["Mon", "Tue", "Wed"], "total": true}
+    },
+    {
+      "id": "excel_golf", "game": "excel", "station": "pc", "pay": 30000, "deadline": 85, "weight": 2, "min_day": 2,
+      "title": "Golf expenses (business)",
+      "line": "Enter my golf expenses. They're business expenses. Golf IS business.",
+      "params": {"labels": ["Balls", "Club", "Lunch", "Second lunch"], "total": true}
+    },
+    {
+      "id": "copier_jam", "game": "copier", "station": "copier", "pay": 20000, "deadline": 60, "weight": 3, "min_day": 1,
+      "title": "Unjam the copier",
+      "line": "The copier jammed. Again. Fix it with your HANDS.",
+      "params": {}
+    },
+    {
+      "id": "copier_ate", "game": "copier", "station": "copier", "pay": 25000, "deadline": 55, "weight": 2, "min_day": 1,
+      "title": "The copier ate my report",
+      "line": "The copier ATE my report. Get it out. Gently. It's sensitive.",
+      "params": {}
+    },
+    {
+      "id": "stamp_approvals", "game": "stamp", "station": "stamp", "pay": 25000, "deadline": 70, "weight": 3, "min_day": 1,
+      "title": "Stamp the approvals",
+      "line": "Stamp these approvals. All of them. Don't read them.",
+      "params": {"stamp": "APPROVED"}
+    },
+    {
+      "id": "stamp_vacation", "game": "stamp", "station": "stamp", "pay": 25000, "deadline": 70, "weight": 2, "min_day": 1,
+      "title": "Deny the vacation requests",
+      "line": "Vacation requests. Stamp them all DENIED. Except mine. Mine is red.",
+      "params": {"stamp": "DENIED"}
+    },
+    {
+      "id": "coffee_park", "game": "coffee", "station": "coffee", "pay": 15000, "deadline": 45, "weight": 3, "min_day": 1,
+      "title": "Park's coffee. EXACTLY.",
+      "line": "Coffee. You know how I like it. (You don't.)",
+      "params": {}
+    },
+    {
+      "id": "coffee_clients", "game": "coffee", "station": "coffee", "pay": 20000, "deadline": 45, "weight": 2, "min_day": 2,
+      "title": "Coffee for the clients",
+      "line": "Clients are here. Coffee. Make it look expensive.",
+      "params": {}
+    },
+    {
+      "id": "bow_choi", "game": "bow", "station": "choi", "pay": 35000, "deadline": 50, "weight": 2, "min_day": 1,
+      "title": "BOW to Director Choi",
+      "line": "Director Choi is in the meeting room. Go BOW. Ninety degrees. Not eighty-nine.",
+      "params": {}
+    }
+  ]
+}

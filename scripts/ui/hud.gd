@@ -27,6 +27,8 @@ var _card_title: Label
 var _card_sub: Label
 var _bubbles := {}  ## speaker instance id -> {node, panel, t}
 var _bubble_layer: Control
+var _target: Interactable
+var task_list: TaskList
 
 
 func _ready() -> void:
@@ -36,6 +38,8 @@ func _ready() -> void:
 	_build_prompt()
 	_build_notify()
 	_build_banner()
+	task_list = TaskList.new()
+	_root.add_child(task_list)
 	_bubble_layer = Control.new()
 	_bubble_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_bubble_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -181,6 +185,9 @@ func _build_card() -> void:
 func _process(delta: float) -> void:
 	_update_notify(delta)
 	_update_bubbles(delta)
+	# Prompts can change while targeted (a station gets a task).
+	if _prompt.visible and is_instance_valid(_target):
+		_prompt_lbl.text = _target.prompt
 
 
 func _refresh_clock() -> void:
@@ -213,6 +220,7 @@ func show_anger(on: bool) -> void:
 
 
 func set_prompt(target: Interactable) -> void:
+	_target = target
 	if target == null:
 		_prompt.visible = false
 		return

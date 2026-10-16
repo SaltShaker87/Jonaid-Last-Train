@@ -16,6 +16,7 @@ var hud: HUD
 var title: TitleScreen
 var pause_menu: PauseMenu
 var game_over: GameOverScreen
+var minigames: MinigameHost
 var _fade: ColorRect
 var _busy := false
 var _title_cam: Camera3D
@@ -39,6 +40,15 @@ func _ready() -> void:
 	add_child(pause_menu)
 	game_over = GameOverScreen.new()
 	add_child(game_over)
+	minigames = MinigameHost.new()
+	minigames.process_mode = Node.PROCESS_MODE_PAUSABLE
+	add_child(minigames)
+	minigames.opened.connect(func() -> void:
+		player.controls_enabled = false
+		hud.set_prompt(null))
+	minigames.closed.connect(func() -> void:
+		if Game.in_run and not _ending and not _busy:
+			player.controls_enabled = true)
 	var fade_layer := CanvasLayer.new()
 	fade_layer.layer = 50
 	add_child(fade_layer)
@@ -95,6 +105,7 @@ func start_run() -> void:
 	game_over.visible = false
 	title.visible = false
 	Game.new_run()
+	Tasks.owed = 0
 	hud.show_anger(false)
 	hud.visible = true
 	Clock.start_day(1)
@@ -106,6 +117,7 @@ func start_run() -> void:
 
 func _begin_day() -> void:
 	player.controls_enabled = false
+	Tasks.start_day()
 	await hud.card("DAY %d" % Clock.day, "%s · Hansung Electronics, 14F · %s" % [Clock.weekday_name(), Clock.now_string()])
 	player.controls_enabled = true
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -127,6 +139,7 @@ func _on_meltdown() -> void:
 	if _ending or not Game.in_run:
 		return
 	_ending = true
+	minigames.abort()
 	player.controls_enabled = false
 	player.perform("Freakout")
 	Clock.running = false
@@ -137,6 +150,8 @@ func _on_meltdown() -> void:
 
 func _on_run_ended(cause: String) -> void:
 	_ending = true
+	minigames.abort()
+	Tasks.active = false
 	Clock.running = false
 	player.controls_enabled = false
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -186,6 +201,8 @@ func _go(loc: String, spawn: String, minutes: float) -> void:
 	_busy = true
 	var had_control := player.controls_enabled
 	player.controls_enabled = false
+	if location != null and location.location_id == "office" and loc != "office":
+		Tasks.leave_office()
 	await _fade_to(1.0, 0.3)
 	if minutes > 0.0:
 		Clock.advance(minutes)

@@ -33,17 +33,37 @@ lives at git tag `legacy-v0.3`.
   with clock, drawn stress face, money, Hana meter; notifications; location
   banners; pause menu.
 
+## Done — Phase 2 (office)
+
+- **Park's task queue** (`Tasks` autoload, templates in `data/tasks.json`,
+  16 tasks). Tasks arrive faster through the day (-30% interval by 18:00)
+  and each day (38 → 29 → 20 → 13 game-min base), deadlines shrink each
+  day, max 6 on the list. Perfect pays 1.5x and relieves stress, ok pays,
+  fail/expire add stress and Park yells. Park's lines queue so bubbles
+  don't overwrite each other.
+- **Six minigames** in a fake desktop-app window, keyboard only, clock
+  keeps running: Wurd (retype his sentence; stress makes fingers slip),
+  Excelsior (napkin numbers, sum by hand), COPYMASTER (needle timing),
+  도장 stamping conveyor with decoys, Park's coffee (memorise, rebuild),
+  bowing to Director Choi (hold in the band, too deep is sarcastic).
+- **Sticky-note HUD** column: what / where / due / pay, red and shaking when
+  due soon, stamped DONE / FAILED / LATE / ABANDONED.
+- **Stations** in the office: desk PC, copier, stamp table, pantry, meeting
+  room (Choi appears when a bow task is pending).
+- **Park walks**: catches long smoke breaks on the balcony (+task, +stress),
+  goes home at a random time 19:00–21:30 (rarely 18:05).
+- **Nunchi**: leaving after 18:00 while Park is in costs stress and an extra
+  personal task next morning. Walking out with open tasks abandons them.
+
 ## Next
 
-1. **Phase 2 — office tasks.** Park's task queue (sticky notes with timers),
-   the first WarioWare minigames (Word typing, Excel, copier jam, stamp, coffee
-   order, bow), money per task, stress on failure/expiry, nunchi when leaving
-   before Park, Park catching you smoking.
+1. **Balance by hand.** The ramp numbers are from arithmetic, not play.
+   Target: day 1 busy but fair, day 2 overwhelming, day 3+ chaos.
 2. **Phase 3 — commute.** Random train delays with silly announcements, a
    short ride segment, convenience-store gifts for Hana, taxi cutscene.
 3. **Phase 4 — home + endings.** Day summary screen, meltdown cutscene
    variety (benign destruction + rare legendary ones), Hana-leaves cutscene.
-4. **Phase 5 — look & feel.** Sound (the old WAVs in assets/audio are unused),
+4. **Phase 5 — look & feel.** Sound (task cues reuse the old placeholder WAVs),
    facial expressions, more NPCs in the office and on the street, a chunkier
    UI font (e.g. Jua, OFL) shipped with the game.
 5. **Phase 6 — home progression** (undecided).
@@ -53,5 +73,4 @@ lives at git tag `legacy-v0.3`.
 - Only playtested via the scripted screenshot tour, not by hand.
 - On Day 1 the elevator stays locked until 18:00 (12 real minutes). Use F5 in
   debug builds to skip ahead.
-- There's nothing to earn money with yet (that's Phase 2), so the taxi takes
-  whatever you have.
+- Money has nothing to spend it on yet except the taxi (shop is Phase 3).

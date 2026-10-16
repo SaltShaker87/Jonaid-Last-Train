@@ -1,7 +1,8 @@
 class_name SmokeSpot
 extends Interactable
 ## The balcony ashtray. Smoking drains stress while the clock (and every task
-## deadline) keeps running. Move or press E to stub it out.
+## deadline) keeps running. Move or press E to stub it out. The longer it
+## lasts, the more likely Park comes out to look (see office.gd).
 
 const RELIEF_PER_SECOND := 3.0
 const LINES := [
@@ -11,24 +12,28 @@ const LINES := [
 	"Fourteen floors up. The air is worse up here. Perfect.",
 ]
 
-var _smoker: Player
+var smoker: Player
+var smoking_time := 0.0
 
 
 func _on_used(by: Node) -> void:
-	if _smoker != null or not (by is Player):
+	if smoker != null or not (by is Player):
 		return
-	_smoker = by as Player
+	smoker = by as Player
+	smoking_time = 0.0
 	enabled = false
 	Game.bump("smokes")
-	_smoker.begin_action("Smoke", _stop)
-	Game.say(_smoker, LINES[randi() % LINES.size()])
+	smoker.begin_action("Smoke", _stop)
+	Game.say(smoker, LINES[randi() % LINES.size()])
 
 
 func _process(delta: float) -> void:
-	if _smoker != null:
+	if smoker != null:
+		smoking_time += delta
 		Stress.relieve(RELIEF_PER_SECOND * delta)
 
 
 func _stop() -> void:
-	_smoker = null
+	smoker = null
+	smoking_time = 0.0
 	enabled = true

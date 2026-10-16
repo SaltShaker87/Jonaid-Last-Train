@@ -1,7 +1,7 @@
 class_name DevTools
 extends Node
 ## Debug-build helpers. F5 +60 game minutes, F6 +20 stress, F7 -20 stress,
-## F8 +20 Hana anger. `-- --shots=DIR` runs a scripted tour and saves
+## F8 +20 Hana anger, F9 Park assigns a task now. `-- --shots=DIR` runs a scripted tour and saves
 ## screenshots, then quits (used to eyeball the game from the command line).
 
 var game: Node
@@ -27,6 +27,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			Stress.relieve(20.0)
 		KEY_F8:
 			Game.add_anger(20.0)
+		KEY_F9:
+			Tasks.spawn()
 
 
 func _shot(dir: String, n: String) -> void:
@@ -47,12 +49,24 @@ func _tour(dir: String) -> void:
 	await _shot(dir, "01_office_spawn")
 	p.yaw = PI * 0.15
 	p.pitch = -0.2
-	await get_tree().create_timer(0.4).timeout
+	Tasks.spawn()
+	Tasks.spawn()
+	await get_tree().create_timer(0.8).timeout
 	await _shot(dir, "02_office_look")
+	await _minigame_shots(dir)
 	p.global_position = Vector3(4.3, 0.1, 6.6)
 	p.yaw = 0.0
 	await get_tree().create_timer(0.6).timeout
 	await _shot(dir, "03_jonaid_desk")
+	# A real station opening its minigame.
+	Tasks.spawn("", "copier_jam")
+	p.global_position = Vector3(-9.7, 0.1, 2.5)
+	p.yaw = PI * 0.5
+	await get_tree().create_timer(0.3).timeout
+	game.location.get_node("Interactables/Copier").interact(p)
+	await get_tree().create_timer(0.6).timeout
+	await _shot(dir, "03b_station_copier")
+	game.minigames.abort()
 	p.global_position = Vector3(-6.5, 0.1, -2.2)
 	p.yaw = PI * 0.25
 	Game.say(p, "Is this text readable? It's a speech bubble now. Not floating 3D text.")
@@ -60,14 +74,23 @@ func _tour(dir: String) -> void:
 	await _shot(dir, "04_park_office")
 	p.global_position = Vector3(4.6, 0.1, -11.2)
 	p.yaw = PI
-	p.begin_action("Smoke")
+	game.location.get_node("Interactables/Ashtray").interact(p)
 	Stress.add(50.0)
 	await get_tree().create_timer(1.2).timeout
 	await _shot(dir, "05_balcony_smoke")
+	game.location._park_patrol()
+	await get_tree().create_timer(10.6).timeout
+	await _shot(dir, "05b_park_catches")
 	p.cancel_action()
 	Stress.reset(20.0)
+	# Leave after 18:00 through the real elevator while Park is still in: nunchi.
 	Clock.minutes = 18 * 60 + 5
-	Game.travel("street", "from_office", 2.0)
+	p.global_position = Vector3(-8.0, 0.1, 6.8)
+	p.yaw = PI
+	await get_tree().create_timer(0.3).timeout
+	game.location.get_node("Interactables/Elevator").interact(p)
+	await get_tree().create_timer(0.25).timeout
+	await _shot(dir, "05c_nunchi")
 	await get_tree().create_timer(1.6).timeout
 	await _shot(dir, "06_street")
 	p.global_position = Vector3(20.0, 0.1, 0.0)
@@ -100,3 +123,40 @@ func _tour(dir: String) -> void:
 	await get_tree().create_timer(3.0).timeout
 	await _shot(dir, "13_game_over")
 	get_tree().quit()
+
+
+## Open each minigame once, poke it a little, screenshot, close.
+func _minigame_shots(dir: String) -> void:
+	var host: MinigameHost = game.minigames
+	for g in ["word", "excel", "copier", "stamp", "coffee", "bow"]:
+		var tpl: Dictionary = {}
+		for t in Tasks._templates:
+			if t["game"] == g:
+				tpl = t
+				break
+		var task: Dictionary = tpl.duplicate(true)
+		task["uid"] = -1
+		task["due"] = Clock.minutes + 60.0
+		host.open(task)
+		await get_tree().create_timer(0.3).timeout
+		if g == "word":
+			for ch in "Dear Direktor":
+				var e := InputEventKey.new()
+				e.pressed = true
+				e.unicode = ch.unicode_at(0)
+				host.current._key(e)
+		elif g == "excel":
+			for ch in "12":
+				var e := InputEventKey.new()
+				e.pressed = true
+				e.unicode = ch.unicode_at(0)
+				host.current._key(e)
+		await get_tree().create_timer(1.4 if g in ["stamp", "coffee"] else 0.5).timeout
+		await _shot(dir, "mg_" + g)
+		host.abort()
+	# One real task, finished perfectly, to see the pay and the stamp.
+	var t := Tasks.spawn()
+	await get_tree().create_timer(0.4).timeout
+	Tasks.complete(t, "perfect")
+	await get_tree().create_timer(0.3).timeout
+	await _shot(dir, "02b_task_done")

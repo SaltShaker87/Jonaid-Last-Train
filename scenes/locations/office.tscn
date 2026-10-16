@@ -1,12 +1,14 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://scripts/world/office.gd" id="1"]
 [ext_resource type="PackedScene" path="res://assets/models/office.glb" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/characters/park.tscn" id="3"]
 [ext_resource type="PackedScene" path="res://scenes/characters/sora.tscn" id="4"]
-[ext_resource type="Script" path="res://scripts/world/elevator_door.gd" id="5"]
-[ext_resource type="Script" path="res://scripts/world/smoke_spot.gd" id="6"]
-[ext_resource type="Script" path="res://scripts/world/quip.gd" id="7"]
+[ext_resource type="PackedScene" path="res://scenes/characters/choi.tscn" id="5"]
+[ext_resource type="Script" path="res://scripts/world/task_station.gd" id="6"]
+[ext_resource type="Script" path="res://scripts/world/elevator_door.gd" id="7"]
+[ext_resource type="Script" path="res://scripts/world/smoke_spot.gd" id="8"]
+[ext_resource type="Script" path="res://scripts/world/quip.gd" id="9"]
 
 [sub_resource type="ProceduralSkyMaterial" id="skymat"]
 sky_top_color = Color(0.36, 0.6, 0.92, 1)
@@ -70,11 +72,15 @@ anim = "SitType"
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.7, 0.08, 3.48)
 anim = "SitType"
 
+[node name="Choi" parent="NPCs" instance=ExtResource("5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.65, 0, -4.3)
+anim = "Idle"
+
 [node name="Interactables" type="Node3D" parent="."]
 
 [node name="Elevator" type="Area3D" parent="Interactables"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 1, 8)
-script = ExtResource("5")
+script = ExtResource("7")
 prompt = "Take the elevator down"
 radius = 1.3
 target = "street"
@@ -83,31 +89,34 @@ minutes = 2.0
 
 [node name="Ashtray" type="Area3D" parent="Interactables"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.3, 1, -12)
-script = ExtResource("6")
+script = ExtResource("8")
 prompt = "Smoke a cigarette"
 radius = 1.0
 
-[node name="Inbox" type="Area3D" parent="Interactables"]
+[node name="DeskPC" type="Area3D" parent="Interactables"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.3, 1, 5.2)
-script = ExtResource("7")
+script = ExtResource("6")
 prompt = "Check your inbox"
-radius = 1
+radius = 1.1
 lines = PackedStringArray("Inbox: 47 unread. Subject lines include 'URGENT', 'URGENT (2)' and 'why is this not done'.", "Park replied-all to an email I never sent. How.", "An email from HR: 'Mandatory fun day, Saturday, 6am. Attendance is optional (mandatory).'", "Someone has set my desktop background to a photo of Park. Smiling. I've never seen him smile.")
-stress_delta = 2
-minutes = 3
+station = "pc"
+idle_prompt = "Check your inbox"
+minutes = 1
 
-[node name="Coffee" type="Area3D" parent="Interactables"]
+[node name="Pantry" type="Area3D" parent="Interactables"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.9, 1, 1.2)
-script = ExtResource("7")
+script = ExtResource("6")
 prompt = "Make instant coffee"
-radius = 1
+radius = 1.1
 lines = PackedStringArray("Instant coffee. Tastes like copier toner. Delicious.", "Three sachets in one cup. This is how I live now.", "The machine says 'ERROR 4'. I make coffee anyway. Out of spite.")
+station = "coffee"
+idle_prompt = "Make instant coffee"
 stress_delta = -4
 minutes = 4
 
 [node name="Snacks" type="Area3D" parent="Interactables"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.9, 1, 3.4)
-script = ExtResource("7")
+script = ExtResource("9")
 prompt = "Steal one of Park's snacks"
 radius = 1
 lines = PackedStringArray("I SAW THAT. EVERY SNACK IS COUNTED.", "Those are for CLIENTS, Jonaid. Are you a CLIENT?", "...Is that my honey butter chip? I'm deducting it from your SOUL.")
@@ -116,23 +125,43 @@ speaker = NodePath("../../NPCs/Park")
 
 [node name="Copier" type="Area3D" parent="Interactables"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.3, 1, 2.5)
-script = ExtResource("7")
+script = ExtResource("6")
 prompt = "Kick the copier"
-radius = 1
+radius = 1.1
 lines = PackedStringArray("It made a noise like a dying goose. Same as yesterday.", "PC LOAD LETTER. What does that even MEAN.", "The copier and I have an understanding. We both hate this.")
+station = "copier"
+idle_prompt = "Kick the copier"
 stress_delta = -3
 minutes = 1
 
+[node name="StampTable" type="Area3D" parent="Interactables"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.55, 1, 0.4)
+script = ExtResource("6")
+prompt = "Fidget with the stamp"
+radius = 1.1
+lines = PackedStringArray("Nothing to stamp. I stamp the air a little anyway.", "The ink pad smells like 1997.")
+station = "stamp"
+idle_prompt = "Fidget with the stamp"
+
+[node name="MeetingRoom" type="Area3D" parent="Interactables"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.65, 1, -2.3)
+script = ExtResource("6")
+prompt = "Peek into the meeting room"
+radius = 1.1
+lines = PackedStringArray("Empty meeting room. The best kind of meeting.", "Someone wrote 'SYNERGY' on the whiteboard and drew a sad face.")
+station = "choi"
+idle_prompt = "Peek into the meeting room"
+
 [node name="TaeyangDesk" type="Area3D" parent="Interactables"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.3, 1, 3.3)
-script = ExtResource("7")
+script = ExtResource("9")
 prompt = "Look at Taeyang's desk"
 radius = 1
 lines = PackedStringArray("A sticky note: 'brb'. It's dated March.", "Taeyang hasn't been seen in weeks. His plant is thriving. Suspicious.", "His chair is still warm. How. HOW.")
 
 [node name="TalkSora" type="Area3D" parent="Interactables"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.7, 1, 2.8)
-script = ExtResource("7")
+script = ExtResource("9")
 prompt = "Talk to Sora"
 radius = 1
 lines = PackedStringArray("Oh, Jonaid. Park asked ME to fix YOUR report. Again. No, don't thank me.", "I already finished tomorrow's work. I'm just here to watch you.", "Employee of the month. Again. The plaque is getting heavy, honestly.")

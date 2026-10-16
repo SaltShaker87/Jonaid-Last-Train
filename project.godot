@@ -21,6 +21,8 @@ config/icon="res://icon.svg"
 Clock="*res://scripts/autoload/clock.gd"
 Stress="*res://scripts/autoload/stress.gd"
 Game="*res://scripts/autoload/game.gd"
+Sfx="*res://scripts/autoload/sfx.gd"
+Tasks="*res://scripts/autoload/tasks.gd"
 
 [display]
 

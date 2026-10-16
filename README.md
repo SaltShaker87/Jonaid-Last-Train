@@ -16,7 +16,7 @@ Open `project.godot` in Godot 4.7 and press Play.
 WASD move · mouse look · Shift run · E use · Esc pause
 
 Debug builds only: F5 = +60 game minutes, F6/F7 = stress up/down,
-F8 = Hana's anger up.
+F8 = Hana's anger up, F9 = Park assigns a task now.
 
 ## Layout
 
@@ -30,11 +30,13 @@ assets/models/*.glb       exported models (rebuild with the scripts below)
 scenes/main.tscn          Main: World + Player
 scenes/characters/        player.tscn + one scene per cast member
 scenes/locations/         office, street, station, home (edit these in Godot)
-scripts/autoload/         Clock, Stress, Game (money, anger, score, message bus)
+data/tasks.json           Park's task catalog (add a task = add an entry)
+scripts/autoload/         Clock, Stress, Game (money, anger, score, message bus), Tasks (Park's queue), Sfx
+scripts/minigames/        Minigame base + word, excel, copier, stamp, coffee, bow
 scripts/main.gd           day loop, travel between locations, UI layers
 scripts/player/           Jonaid's controller + camera
-scripts/world/            Location, Interactable, Door, Quip, NPC, ToonKit, station/home/office logic
-scripts/ui/               HUD (clock, stress face, bubbles), title, pause, game over
+scripts/world/            Location, Interactable, Door, Quip, TaskStation, NPC, ToonKit, station/home/office logic
+scripts/ui/               HUD (clock, stress face, bubbles, Park's sticky-note list), minigame host, title, pause, game over
 shaders/outline.gdshader  cartoon outline pass
 ```
 
@@ -42,6 +44,8 @@ Locations are normal `.tscn` scenes. Spawn points are `Marker3D`s under
 `Spawns` (their -Z is the facing direction). Anything you can press E on is an
 `Area3D` with an `Interactable` script (`Door`, `Quip`, `SmokeSpot`, …);
 `Quip` takes a list of lines in the inspector, so small jokes need no code.
+`TaskStation` (a Quip) is where Park's tasks get done: its `station` matches
+the `station` field of tasks in `data/tasks.json`.
 
 ## Rebuilding models
 
@@ -64,5 +68,6 @@ let the Godot editor reimport (or run `godot --headless --path . --import`).
 godot --path . -- --shots=/some/folder
 ```
 
-Plays a scripted tour (title, office, balcony, street, station, train, home,
+Plays a scripted tour (title, office, every minigame, a task station, Park
+catching a smoker, leaving before Park, street, station, train, home, day 2,
 meltdown, game over), saves a PNG at each stop and quits.

@@ -195,14 +195,16 @@ should be longer, shorten the office day before softening the ramp.
 - Models: `blender/*.py` → `assets/models/*.glb`. Objects named `*-col` in
   Blender get collision on import.
 - Autoloads: `Clock` (time), `Stress`, `Game` (money, anger, day, score, save).
-- Minigames: `scenes/minigames/*.tscn`, all extend `Minigame`
-  (`start(difficulty)` → `finished(grade)`), grades `perfect / ok / fail`.
+- Tasks: templates in `data/tasks.json` (what, where, deadline, pay, which
+  minigame); the `Tasks` autoload runs Park's queue.
+- Minigames: `scripts/minigames/*.gd`, all extend `Minigame`
+  (`setup(task, difficulty)` → `finished(grade)`), grades `perfect / ok / fail`.
 
 ## Roadmap
 
 0. ✅ This document.
 1. ✅ **Foundation** — scenes, animated Jonaid, camera, transitions, minimal HUD.
-2. **Office** — task queue, first minigames, money, stress, balcony, meltdown.
+2. ✅ **Office** — task queue, first minigames, money, stress, balcony, meltdown.
 3. **Commute** — street, station timetable, delays, train ride, taxi.
 4. **Home** — Hana greeting, anger tiers, day summary, next day, game over.
 5. **Look & feel** — toon shader polish, more animation, sound, writing.
